@@ -14,7 +14,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 ).toString();
 
 export function ImportarFichaModal({ open, onOpenChange, onFichaLida }: { open: boolean, onOpenChange: (open: boolean) => void, onFichaLida: () => void }) {
-  const { clientes, lojistas, addCliente, addVeiculo, criarContrato } = useStore();
+  const { setOcrData } = useStore();
   const [loading, setLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [lojistaId, setLojistaId] = useState("");
@@ -108,37 +108,20 @@ export function ImportarFichaModal({ open, onOpenChange, onFichaLida }: { open: 
         return;
       }
 
-      toast.success(`Dados identificados: ${nome}. Cadastrando...`);
+      toast.success(`Ficha pré-preenchida para ${nome}! Verifique os dados.`);
 
-      // 1. Cliente
-      let clienteId = clientes.find(c => c.cpf === cpf)?.id;
-      if (!clienteId) {
-        const newClienteId = "CLI-" + Math.random().toString(36).substr(2, 9);
-        await addCliente({ nome: nome, cpf, telefone: "00000000000" });
-        clienteId = newClienteId; 
-      }
-
-      // 2. Veiculo
-      const veiculoId = await addVeiculo({
+      // Store Extracted OCR Data globally for NovoContratoModal
+      setOcrData({
+        cpf,
+        nome,
+        valorFinanciado,
+        valorParcela,
         placa,
         modelo,
-        ano: new Date().getFullYear(),
-      });
-      
-      // 3. Contrato
-      await criarContrato({
-        cliente_id: clienteId || (clientes[0]?.id ?? "undefined-client"),
-        lojista_id: lojistaId,
-        banco: banco as any,
-        veiculo_id: veiculoId || "undefined-veiculo",
-        veiculo: { placa, modelo },
-        valor_financiado: valorFinanciado,
-        valor_parcela: valorParcela,
-        comissao_promotora: 0,
-        status_formalizacao: 'Pendente',
+        lojistaId,
+        banco
       });
 
-      toast.success("Mágica Concluída! Ficha, Veículo e Cliente registrados automaticamente.");
       setWhatsappText("");
       setImagePreview(null);
       onOpenChange(false);

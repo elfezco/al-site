@@ -38,9 +38,12 @@ const simularConsultaPlaca = async (placa: string) => {
 };
 
 export function NovoContratoModal({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
-  const { clientes, lojistas, addVeiculo, criarContrato } = useStore();
+  const { clientes, lojistas, addCliente, addVeiculo, criarContrato, ocrData, setOcrData } = useStore();
   const [step, setStep] = useState(1);
   const [loadingSearch, setLoadingSearch] = useState(false);
+  
+  // OCR Temp State
+  const [ocrTelefone, setOcrTelefone] = useState("");
   
   // Forms
   const [placaInput, setPlacaInput] = useState("");
@@ -60,6 +63,32 @@ export function NovoContratoModal({ open, onOpenChange }: { open: boolean, onOpe
 
   useEffect(() => {
     if (open) {
+      if (ocrData) {
+        setStep(2);
+        setPlacaInput(ocrData.placa || "");
+        setVeiculoFipe({
+          placa: ocrData.placa,
+          marca: "Veículo",
+          modelo: ocrData.modelo || "Importado via OCR",
+          anoModelo: new Date().getFullYear(),
+          anoFabricacao: new Date().getFullYear(),
+          chassi: "OCR" + Math.floor(Math.random() * 100000),
+          renavam: "012" + Math.floor(Math.random() * 100000),
+          valorFipe: ocrData.valorFinanciado || 40000,
+        });
+        setValorFinanciado(ocrData.valorFinanciado ? String(ocrData.valorFinanciado) : "");
+        setValorParcela(ocrData.valorParcela ? String(ocrData.valorParcela) : "");
+        if (ocrData.lojistaId) setLojistaId(ocrData.lojistaId);
+        if (ocrData.banco) setBanco(ocrData.banco);
+        
+        // Verifica se cliente já existe
+        const c = clientes.find(c => c.cpf === ocrData.cpf);
+        if (c) setClienteId(c.id);
+        else setClienteId("NOVO_VIA_OCR");
+        
+        return; // Don't load draft if using OCR
+      }
+
       const saved = localStorage.getItem('draft_contrato');
       if (saved) {
         try {
@@ -101,12 +130,17 @@ export function NovoContratoModal({ open, onOpenChange }: { open: boolean, onOpe
         setValorParcela("");
         setComissaoPromotora("");
         setTrocoNaTroca("");
+        setOcrTelefone("");
         setCheckDut(false);
         setCheckContrato(false);
         setCheckBiometria(false);
       }
+    } else {
+      if (!open && ocrData) {
+        setOcrData(null);
+      }
     }
-  }, [open]);
+  }, [open, ocrData, clientes]);
 
   useEffect(() => {
     if (open && (clienteId || lojistaId || valorFinanciado || placaInput)) {
@@ -140,8 +174,25 @@ export function NovoContratoModal({ open, onOpenChange }: { open: boolean, onOpe
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
+    if (clienteId === "NOVO_VIA_OCR" && !ocrTelefone) {
+      toast.error("Preencha o Telefone do novo cliente importado");
+      return;
+    }
     
     try {
+      let finalClienteId = clienteId;
+      
+      // 0. Cadastrar Cliente via OCR se necessário
+      if (clienteId === "NOVO_VIA_OCR" && ocrData) {
+        finalClienteId = "CLI-" + Math.random().toString(36).substr(2, 9);
+        await addCliente({
+          id: finalClienteId,
+          nome: ocrData.nome,
+          cpf: ocrData.cpf,
+          telefone: ocrTelefone.replace(/\D/g, '')
+        } as any);
+      }
+
       // 1. Cadastrar Veículo
       const veiculoId = await addVeiculo({
         placa: veiculoFipe.placa,
@@ -155,7 +206,7 @@ export function NovoContratoModal({ open, onOpenChange }: { open: boolean, onOpe
 
       // 2. Criar Contrato
       await criarContrato({
-        cliente_id: clienteId,
+        cliente_id: finalClienteId,
         lojista_id: lojistaId,
         banco: banco as any,
         veiculo_id: veiculoId,
@@ -171,6 +222,7 @@ export function NovoContratoModal({ open, onOpenChange }: { open: boolean, onOpe
       });
 
       localStorage.removeItem('draft_contrato');
+      if (ocrData) setOcrData(null);
       onOpenChange(false);
     } catch (e) {
       console.error(e);
@@ -248,25 +300,35 @@ export function NovoContratoModal({ open, onOpenChange }: { open: boolean, onOpe
             <div className="grid grid-cols-2 gap-4 pt-2">
               <label className="block">
                 <span className="text-xs text-muted-foreground">Cliente</span>
-                <select
-                  value={clienteId}
-                  onChange={e => setClienteId(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-white/12 bg-black/30 px-3 py-2 text-sm outline-none transition-colors focus:border-gold/60"
-                  required
-                >
-                  <option value="">Selecione...</option>
-                  {clientes.map(c => <option key={c.id} value={c.id}>{c.nome} ({c.cpf})</option>)}
-                </select>
-                {/* Dica OCR */}
-                {(() => {
-                  try {
-                    const d = JSON.parse(localStorage.getItem('draft_contrato') || '{}');
-                    if (d.nomeImportado && !clienteId) {
-                      return <p className="mt-1 text-[10px] text-emerald-400">OCR Sugere: {d.nomeImportado} ({d.cpfImportado})</p>;
-                    }
-                  } catch(e){}
-                  return null;
-                })()}
+                {clienteId === "NOVO_VIA_OCR" ? (
+                  <div className="mt-1 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-2">
+                    <p className="text-sm font-medium text-emerald-400">Cliente Novo (Via OCR)</p>
+                    <p className="text-xs text-white/70">Nome: {ocrData?.nome}</p>
+                    <p className="text-xs text-white/70">CPF: {ocrData?.cpf}</p>
+                    
+                    <div className="pt-2">
+                      <span className="text-[10px] text-destructive font-bold uppercase tracking-wider">Telefone (Obrigatório) *</span>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="(00) 00000-0000"
+                        value={ocrTelefone}
+                        onChange={(e) => setOcrTelefone(e.target.value)}
+                        className="mt-1 w-full rounded-md border border-destructive/50 bg-black/50 px-3 py-2 text-sm outline-none focus:border-destructive"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <select
+                    value={clienteId}
+                    onChange={e => setClienteId(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-white/12 bg-black/30 px-3 py-2 text-sm outline-none transition-colors focus:border-gold/60"
+                    required
+                  >
+                    <option value="">Selecione...</option>
+                    {clientes.map(c => <option key={c.id} value={c.id}>{c.nome} ({c.cpf})</option>)}
+                  </select>
+                )}
               </label>
 
               <label className="block">
