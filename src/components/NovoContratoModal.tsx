@@ -57,8 +57,25 @@ export function NovoContratoModal({ open, onOpenChange }: { open: boolean, onOpe
           if (draft.comissaoPromotora) setComissaoPromotora(draft.comissaoPromotora);
           if (draft.trocoNaTroca) setTrocoNaTroca(draft.trocoNaTroca);
           if (draft.banco) setBanco(draft.banco);
-          if (draft.placaInput) setPlacaInput(draft.placaInput);
-        } catch(e){}
+          if (draft.placaInput) {
+            setPlacaInput(draft.placaInput);
+            if (draft.placaInput === "OCR-0000") {
+              setStep(2); // Pula a busca da placa no OCR
+              setVeiculoFipe({
+                placa: "OCR-0000",
+                marca: "Veículo",
+                modelo: "Importado via OCR",
+                anoModelo: new Date().getFullYear(),
+                anoFabricacao: new Date().getFullYear(),
+                chassi: "OCR" + Math.floor(Math.random() * 100000),
+                renavam: "012" + Math.floor(Math.random() * 100000),
+                valorFipe: Number(draft.valorFinanciado) || 40000,
+              });
+            }
+          }
+          if (draft.nomeImportado && draft.cpfImportado) {
+            toast.success(`Cliente ${draft.nomeImportado} importado via OCR! Crie o cadastro ou selecione-o.`);
+          }
       } else {
         setStep(1);
         setPlacaInput("");
@@ -223,8 +240,18 @@ export function NovoContratoModal({ open, onOpenChange }: { open: boolean, onOpe
                   required
                 >
                   <option value="">Selecione...</option>
-                  {clientes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                  {clientes.map(c => <option key={c.id} value={c.id}>{c.nome} ({c.cpf})</option>)}
                 </select>
+                {/* Dica OCR */}
+                {(() => {
+                  try {
+                    const d = JSON.parse(localStorage.getItem('draft_contrato') || '{}');
+                    if (d.nomeImportado && !clienteId) {
+                      return <p className="mt-1 text-[10px] text-emerald-400">OCR Sugere: {d.nomeImportado} ({d.cpfImportado})</p>;
+                    }
+                  } catch(e){}
+                  return null;
+                })()}
               </label>
 
               <label className="block">

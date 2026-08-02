@@ -55,42 +55,124 @@ function RelatoriosPage() {
   }, [views, bancoFilter, lojistaFilter, quinzenaFilter]);
 
   const subtotalVolume = dadosFiltrados.reduce((acc, v) => acc + Number(v.contrato.valor_financiado), 0);
+  const ticketMedio = dadosFiltrados.length > 0 ? subtotalVolume / dadosFiltrados.length : 0;
+  
+  const topLojista = useMemo(() => {
+    if (dadosFiltrados.length === 0) return "N/D";
+    const counts: Record<string, number> = {};
+    dadosFiltrados.forEach(v => {
+      counts[v.lojista.razao_social] = (counts[v.lojista.razao_social] || 0) + Number(v.contrato.valor_financiado);
+    });
+    return Object.entries(counts).sort((a,b) => b[1] - a[1])[0][0];
+  }, [dadosFiltrados]);
 
   const exportPDF = () => {
     try {
       const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      
+      // Cor Azul Escuro (ex: #1b273a)
+      const primaryColor: [number, number, number] = [27, 39, 58];
+      
+      // Header Box
+      doc.setFillColor(...primaryColor);
+      doc.roundedRect(14, 15, pageWidth - 28, 25, 3, 3, "F");
+      
+      doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "bold");
-      doc.text("Relatório de Contratos - AL Finanças", 14, 15);
+      doc.setFontSize(22);
+      doc.text("Relatório Quinzenal de Vendas", pageWidth / 2, 26, { align: "center" });
       
-      doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      
-      let filterText = `Total: ${dadosFiltrados.length} contratos | Volume: ${brl(subtotalVolume)}`;
+      doc.setFontSize(10);
+      let subtitle = `AL Finanças - Filial 920 | ${quinzenaFilter !== "Todas" ? quinzenaFilter : "Todas as Quinzenas"}`;
       if (lojistaFilter !== "Todos") {
         const lojName = lojistas.find(l => l.id === lojistaFilter)?.razao_social;
-        filterText = `Lojista: ${lojName} | ` + filterText;
+        subtitle += ` | Lojista: ${lojName}`;
       }
-      if (quinzenaFilter !== "Todas") {
-        filterText = `Período: ${quinzenaFilter} | ` + filterText;
-      }
+      doc.text(subtitle, pageWidth / 2, 34, { align: "center" });
       
-      doc.text(filterText, 14, 22);
+      // KPI Cards
+      doc.setDrawColor(220, 220, 220);
+      doc.setFillColor(255, 255, 255);
+      
+      const cardWidth = (pageWidth - 28 - 9) / 4;
+      const cardY = 48;
+      const cardH = 22;
+      
+      const drawCard = (index: number, label: string, value: string, isBig: boolean = false) => {
+        const x = 14 + (cardWidth + 3) * index;
+        doc.roundedRect(x, cardY, cardWidth, cardH, 2, 2, "FD");
+        
+        doc.setFontSize(7);
+        doc.setTextColor(100, 100, 100);
+        const splitLabel = doc.splitTextToSize(label, cardWidth - 2);
+        doc.text(splitLabel, x + cardWidth/2, cardY + 7, { align: "center" });
+        
+        doc.setFontSize(isBig ? 12 : 11);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...primaryColor);
+        
+        const splitValue = doc.splitTextToSize(value, cardWidth - 2);
+        doc.text(splitValue, x + cardWidth/2, cardY + (splitLabel.length * 3) + 7, { align: "center" });
+      };
+      
+      drawCard(0, "TOTAL DE\nOPERAÇÕES", String(dadosFiltrados.length), true);
+      drawCard(1, "VOLUME TOTAL", brl(subtotalVolume));
+      drawCard(2, "TICKET MÉDIO", brl(ticketMedio));
+      drawCard(3, "VENDEDOR\nDESTAQUE", topLojista);
+
+      // Section Title
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...primaryColor);
+      doc.text("Detalhamento dos Contratos", 14, 85);
+      
+      doc.setDrawColor(...primaryColor);
+      doc.setLineWidth(0.5);
+      doc.line(14, 88, pageWidth - 14, 88);
 
       const tableData = dadosFiltrados.map((v) => [
         dataBR(v.contrato.data_contrato),
         v.cliente.nome,
-        v.cliente.cpf,
-        lojistaFilter === "Todos" ? v.lojista.razao_social : (v.contrato.veiculo?.modelo || "N/D"),
-        v.contrato.banco,
+        v.contrato.banco === "Daycoval" ? "CDC LEVES PF" : "LEVES PF DIGITAL",
+        v.contrato.veiculo?.modelo || "N/D",
         brl(Number(v.contrato.valor_financiado)),
       ]);
 
       autoTable(doc, {
-        startY: 30,
-        head: [["Data", "Cliente", "CPF", lojistaFilter === "Todos" ? "Lojista" : "Veículo", "Banco", "Volume"]],
+        startY: 92,
+        head: [["Data", "Cliente", "Produto / Modalidade", "Veículo Financiado", "Valor da Operação"]],
         body: tableData,
-        theme: 'grid',
-        headStyles: { fillColor: [184, 134, 11] }, // Dark Gold
+        theme: 'plain',
+        headStyles: { 
+          textColor: primaryColor,
+          fontStyle: 'bold',
+          fontSize: 9
+        },
+        bodyStyles: {
+          textColor: [60, 60, 60],
+          fontSize: 9
+        },
+        alternateRowStyles: {
+          fillColor: [250, 250, 250]
+        },
+        margin: { left: 14, right: 14 },
+        didDrawCell: (data) => {
+          // Draw gray background for "Produto / Modalidade" column body
+          if (data.section === 'body' && data.column.index === 2) {
+            doc.setFillColor(235, 235, 235);
+            doc.roundedRect(data.cell.x + 2, data.cell.y + 1, data.cell.width - 4, data.cell.height - 2, 1, 1, "F");
+            doc.setTextColor(80, 80, 80);
+            doc.text(data.cell.text, data.cell.x + data.cell.width/2, data.cell.y + data.cell.height/2 + 1, { align: "center", baseline: "middle" });
+          }
+        },
+        willDrawCell: (data) => {
+          if (data.section === 'body' && data.column.index === 2) {
+            // clear text so didDrawCell draws it
+            data.cell.text = [];
+          }
+        }
       });
 
       doc.save(`Relatorio_AL_Financas_${new Date().getTime()}.pdf`);

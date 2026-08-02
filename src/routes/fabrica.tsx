@@ -3,10 +3,13 @@ import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { AppShell } from "@/components/AppShell";
 import { LoadingBlock } from "@/components/GoldSpinner";
-import { Clock, Download } from "lucide-react";
+import { Clock, Download, Wand2 } from "lucide-react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { toast } from "sonner";
+import { useState } from "react";
+import { ImportarFichaModal } from "@/components/ImportarFichaModal";
+import { NovoContratoModal } from "@/components/NovoContratoModal";
 
 export const Route = createFileRoute("/fabrica")({
   head: () => ({
@@ -29,6 +32,8 @@ const colunas = [
 
 function FabricaPage() {
   const { contratos, clientes, lojistas, loading } = useStore();
+  const [openOcr, setOpenOcr] = useState(false);
+  const [openContrato, setOpenContrato] = useState(false);
 
   const getStatus = (c: any) => {
     // Simulação do Status Baseado em Campos
@@ -74,6 +79,12 @@ function FabricaPage() {
               Acompanhamento de aprovação e formalização de propostas
             </p>
           </div>
+          <button
+            onClick={() => setOpenOcr(true)}
+            className="inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#FADB5F,#B8860B)] px-4 py-2.5 text-sm font-semibold text-[#0B0C10] transition-opacity hover:opacity-90"
+          >
+            <Wand2 className="h-4 w-4" /> Importar Ficha (OCR)
+          </button>
         </div>
 
         {loading ? (
@@ -127,6 +138,16 @@ function FabricaPage() {
           </div>
         )}
       </div>
+
+      <ImportarFichaModal 
+        open={openOcr} 
+        onOpenChange={setOpenOcr} 
+        onFichaLida={() => toast.success("Esteira Atualizada!")} 
+      />
+      <NovoContratoModal 
+        open={openContrato} 
+        onOpenChange={setOpenContrato} 
+      />
     </AppShell>
   );
 }
