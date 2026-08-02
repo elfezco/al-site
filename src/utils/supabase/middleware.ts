@@ -2,8 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 // Importações Next.js omitidas para evitar quebra de Build no Vite
 // import { type NextRequest, NextResponse } from "next/server";
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env['VITE_SUPABASE_URL'] || (import.meta as any).env.VITE_SUPABASE_URL;
+const supabaseKey = process.env['VITE_SUPABASE_ANON_KEY'] || (import.meta as any).env.VITE_SUPABASE_ANON_KEY;
 
 // No ecossistema Vite / TanStack Start, o middleware global é gerenciado por 
 // hooks de roteamento (ex: `beforeLoad` no TanStack Router) em vez de um arquivo

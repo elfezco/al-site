@@ -5,7 +5,7 @@ export function calcularVencimentosFPD(dataContrato: Date): string[] {
   return [30, 60, 90].map((dias) => {
     const data = new Date(dataContrato);
     data.setDate(data.getDate() + dias);
-    return data.toISOString().split("T")[0];
+    return data.toISOString().split("T")[0] as string;
   });
 }
 

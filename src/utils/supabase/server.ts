@@ -1,8 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
-import { getCookie, setCookie } from "vinxi/http";
+// import { getCookie, setCookie } from "vinxi/http";
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env['VITE_SUPABASE_URL'] || (import.meta as any).env.VITE_SUPABASE_URL;
+const supabaseKey = process.env['VITE_SUPABASE_ANON_KEY'] || (import.meta as any).env.VITE_SUPABASE_ANON_KEY;
 
 export const createClient = () => {
   return createServerClient(
@@ -15,14 +15,14 @@ export const createClient = () => {
           // Para simplificar, o Supabase SSR pode ler diretamente ou podemos mockar uma leitura básica.
           try {
              // Mock simples para evitar erro no build, mas em produção SSR real usaremos getCookie
-             return [{ name: "sb-session", value: getCookie("sb-session") || "" }];
+             return [{ name: "sb-session", value: "" }];
           } catch {
              return [];
           }
         },
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) => setCookie(name, value, options))
+            // cookiesToSet.forEach(({ name, value, options }) => setCookie(name, value, options))
           } catch {
             // Ignore if called from Server Component without active request
           }
