@@ -23,12 +23,7 @@ export const Route = createFileRoute("/lojistas")({
       {
         name: "description",
         content:
-          "CRM B2B dos lojistas parceiros: volume originado, taxa de inadimplência e dados de repasse via Pix.",
-      },
-      { property: "og:title", content: "Lojistas & Repasses" },
-      {
-        property: "og:description",
-        content: "Volume originado, inadimplência e chave Pix de cada loja parceira.",
+          "CRM B2B dos lojistas parceiros: volume originado, taxa de inadimplência e controle de repasses.",
       },
     ],
   }),
@@ -43,14 +38,13 @@ const schema = z.object({
     .min(10, "Informe o WhatsApp com DDD")
     .max(20)
     .refine((v) => soDigitos(v).length >= 10, "WhatsApp inválido"),
-  chave_pix: z.string().trim().min(5, "Informe a chave Pix").max(120),
 });
 
 function LojistasPage() {
   const { lojistaMetrics, addLojista } = useStore();
   const loading = useSimulatedLoad();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ razao_social: "", contato_whatsapp: "", chave_pix: "" });
+  const [form, setForm] = useState({ razao_social: "", contato_whatsapp: "" });
   const [erros, setErros] = useState<Record<string, string>>({});
 
   const submit = (e: React.FormEvent) => {
@@ -65,7 +59,7 @@ function LojistasPage() {
     }
     addLojista({ ...parsed.data, contato_whatsapp: soDigitos(parsed.data.contato_whatsapp) });
     setErros({});
-    setForm({ razao_social: "", contato_whatsapp: "", chave_pix: "" });
+    setForm({ razao_social: "", contato_whatsapp: "" });
     setOpen(false);
     toast.success(`Lojista ${parsed.data.razao_social} cadastrado`);
   };
@@ -94,12 +88,6 @@ function LojistasPage() {
                 error={erros["contato_whatsapp"]}
                 onChange={(v) => setForm((f) => ({ ...f, contato_whatsapp: v }))}
               />
-              <Field
-                label="Chave Pix"
-                value={form.chave_pix}
-                error={erros["chave_pix"]}
-                onChange={(v) => setForm((f) => ({ ...f, chave_pix: v }))}
-              />
               <button
                 type="submit"
                 className="w-full rounded-lg bg-[linear-gradient(135deg,#FADB5F,#B8860B)] px-4 py-2.5 text-sm font-semibold text-[#0B0C10] transition-opacity hover:opacity-90"
@@ -116,7 +104,7 @@ function LojistasPage() {
       ) : (
         <div className="card-surface overflow-hidden rounded-xl shadow-[var(--shadow-elegant)]">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-sm">
+            <table className="w-full min-w-[660px] text-sm">
               <thead>
                 <tr className="border-b border-white/8 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <th className="px-5 py-3">Lojista</th>
@@ -124,7 +112,6 @@ function LojistasPage() {
                   <th className="px-5 py-3">Volume originado</th>
                   <th className="px-5 py-3">Inadimplentes</th>
                   <th className="px-5 py-3">Taxa</th>
-                  <th className="px-5 py-3">Chave Pix</th>
                   <th className="px-5 py-3 text-right">Ação</th>
                 </tr>
               </thead>
@@ -148,7 +135,6 @@ function LojistasPage() {
                         {l.taxaInadimplencia.toFixed(1)}%
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-xs text-muted-foreground">{l.chave_pix}</td>
                     <td className="px-5 py-3 text-right">
                       <a
                         href={`https://wa.me/${soDigitos(l.contato_whatsapp)}`}

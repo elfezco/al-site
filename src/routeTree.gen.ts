@@ -11,9 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CentralRouteImport } from './routes/central'
+import { Route as ClientesRouteImport } from './routes/clientes'
+import { Route as DocumentosRouteImport } from './routes/documentos'
 import { Route as EsteiraRouteImport } from './routes/esteira'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LojistasRouteImport } from './routes/lojistas'
+import { Route as RelatoriosRouteImport } from './routes/relatorios'
+import { Route as VeiculosRouteImport } from './routes/veiculos'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -23,6 +27,16 @@ const IndexRoute = IndexRouteImport.update({
 const CentralRoute = CentralRouteImport.update({
   id: '/central',
   path: '/central',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClientesRoute = ClientesRouteImport.update({
+  id: '/clientes',
+  path: '/clientes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocumentosRoute = DocumentosRouteImport.update({
+  id: '/documentos',
+  path: '/documentos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EsteiraRoute = EsteiraRouteImport.update({
@@ -40,43 +54,97 @@ const LojistasRoute = LojistasRouteImport.update({
   path: '/lojistas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RelatoriosRoute = RelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VeiculosRoute = VeiculosRouteImport.update({
+  id: '/veiculos',
+  path: '/veiculos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/central': typeof CentralRoute
+  '/clientes': typeof ClientesRoute
+  '/documentos': typeof DocumentosRoute
   '/esteira': typeof EsteiraRoute
   '/login': typeof LoginRoute
   '/lojistas': typeof LojistasRoute
+  '/relatorios': typeof RelatoriosRoute
+  '/veiculos': typeof VeiculosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/central': typeof CentralRoute
+  '/clientes': typeof ClientesRoute
+  '/documentos': typeof DocumentosRoute
   '/esteira': typeof EsteiraRoute
   '/login': typeof LoginRoute
   '/lojistas': typeof LojistasRoute
+  '/relatorios': typeof RelatoriosRoute
+  '/veiculos': typeof VeiculosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/central': typeof CentralRoute
+  '/clientes': typeof ClientesRoute
+  '/documentos': typeof DocumentosRoute
   '/esteira': typeof EsteiraRoute
   '/login': typeof LoginRoute
   '/lojistas': typeof LojistasRoute
+  '/relatorios': typeof RelatoriosRoute
+  '/veiculos': typeof VeiculosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/central' | '/esteira' | '/login' | '/lojistas'
+  fullPaths:
+    | '/'
+    | '/central'
+    | '/clientes'
+    | '/documentos'
+    | '/esteira'
+    | '/login'
+    | '/lojistas'
+    | '/relatorios'
+    | '/veiculos'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/central' | '/esteira' | '/login' | '/lojistas'
-  id: '__root__' | '/' | '/central' | '/esteira' | '/login' | '/lojistas'
+  to:
+    | '/'
+    | '/central'
+    | '/clientes'
+    | '/documentos'
+    | '/esteira'
+    | '/login'
+    | '/lojistas'
+    | '/relatorios'
+    | '/veiculos'
+  id:
+    | '__root__'
+    | '/'
+    | '/central'
+    | '/clientes'
+    | '/documentos'
+    | '/esteira'
+    | '/login'
+    | '/lojistas'
+    | '/relatorios'
+    | '/veiculos'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CentralRoute: typeof CentralRoute
+  ClientesRoute: typeof ClientesRoute
+  DocumentosRoute: typeof DocumentosRoute
   EsteiraRoute: typeof EsteiraRoute
   LoginRoute: typeof LoginRoute
   LojistasRoute: typeof LojistasRoute
+  RelatoriosRoute: typeof RelatoriosRoute
+  VeiculosRoute: typeof VeiculosRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -93,6 +161,20 @@ declare module '@tanstack/react-router' {
       path: '/central'
       fullPath: '/central'
       preLoaderRoute: typeof CentralRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clientes': {
+      id: '/clientes'
+      path: '/clientes'
+      fullPath: '/clientes'
+      preLoaderRoute: typeof ClientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/documentos': {
+      id: '/documentos'
+      path: '/documentos'
+      fullPath: '/documentos'
+      preLoaderRoute: typeof DocumentosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/esteira': {
@@ -116,15 +198,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LojistasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/relatorios': {
+      id: '/relatorios'
+      path: '/relatorios'
+      fullPath: '/relatorios'
+      preLoaderRoute: typeof RelatoriosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/veiculos': {
+      id: '/veiculos'
+      path: '/veiculos'
+      fullPath: '/veiculos'
+      preLoaderRoute: typeof VeiculosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CentralRoute: CentralRoute,
+  ClientesRoute: ClientesRoute,
+  DocumentosRoute: DocumentosRoute,
   EsteiraRoute: EsteiraRoute,
   LoginRoute: LoginRoute,
   LojistasRoute: LojistasRoute,
+  RelatoriosRoute: RelatoriosRoute,
+  VeiculosRoute: VeiculosRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

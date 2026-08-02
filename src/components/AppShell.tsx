@@ -9,13 +9,21 @@ import {
   Menu,
   ShieldCheck,
   X,
+  Users,
+  Car,
+  Files,
+  PieChart
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const nav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/esteira", label: "Esteira de Risco", icon: KanbanSquare },
-  { to: "/lojistas", label: "Lojistas & Repasses", icon: Store },
+  { to: "/lojistas", label: "Lojistas", icon: Store },
+  { to: "/clientes", label: "Clientes", icon: Users },
+  { to: "/veiculos", label: "Veículos", icon: Car },
+  { to: "/documentos", label: "Cofre", icon: Files },
+  { to: "/relatorios", label: "Relatórios", icon: PieChart },
   { to: "/central", label: "Central de Dados", icon: Database },
 ] as const;
 

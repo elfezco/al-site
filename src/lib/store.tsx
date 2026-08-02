@@ -7,6 +7,8 @@ import type {
   Lojista,
   ParcelaFPD,
   RiscoNivel,
+  Veiculo,
+  Documento,
 } from "./types";
 import { supabase } from "./supabase";
 import { toast } from "sonner";
@@ -24,13 +26,28 @@ interface StoreValue {
   clientes: Cliente[];
   contratos: Contrato[];
   parcelas: ParcelaFPD[];
+  veiculos: Veiculo[];
+  documentos: Documento[];
   views: ContratoView[];
   lojistaMetrics: LojistaMetrics[];
-  addLojista: (data: Omit<Lojista, "id">) => Promise<void>;
-  marcarParcelaPaga: (parcelaId: string) => Promise<void>;
-  criarContrato: (contrato: Omit<Contrato, "id" | "data_contrato">) => Promise<void>;
-  carregarDados: () => Promise<void>;
   loading: boolean;
+  carregarDados: () => Promise<void>;
+  // Lojistas
+  addLojista: (data: Omit<Lojista, "id">) => Promise<void>;
+  // Clientes
+  addCliente: (data: Omit<Cliente, "id">) => Promise<void>;
+  editCliente: (id: string, data: Partial<Cliente>) => Promise<void>;
+  deleteCliente: (id: string) => Promise<void>;
+  // Veículos
+  addVeiculo: (data: Omit<Veiculo, "id">) => Promise<void>;
+  editVeiculo: (id: string, data: Partial<Veiculo>) => Promise<void>;
+  deleteVeiculo: (id: string) => Promise<void>;
+  // Contratos & Parcelas
+  criarContrato: (contrato: Omit<Contrato, "id" | "data_contrato">) => Promise<void>;
+  marcarParcelaPaga: (parcelaId: string) => Promise<void>;
+  // Documentos
+  addDocumento: (data: Omit<Documento, "id" | "created_at">) => Promise<void>;
+  deleteDocumento: (id: string) => Promise<void>;
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -53,7 +70,6 @@ function buildView(
   const etapa: ContratoView["etapa"] = parcelaAtual ? parcelaAtual.numero_parcela : 4;
   const dias = parcelaAtual ? diasAte(parcelaAtual.data_vencimento) : null;
 
-  // Lógica de Risco baseada nos dias para o vencimento
   let risco: RiscoNivel = "blindado";
   if (dias !== null) {
     if (dias < 0) risco = "critico";
@@ -70,28 +86,36 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [contratos, setContratos] = useState<Contrato[]>([]);
   const [parcelas, setParcelas] = useState<ParcelaFPD[]>([]);
+  const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
+  const [documentos, setDocumentos] = useState<Documento[]>([]);
   const [loading, setLoading] = useState(true);
 
   const carregarDados = async () => {
     if (!user) return;
     setLoading(true);
     try {
-      const [lojRes, cliRes, conRes, parRes] = await Promise.all([
+      const [lojRes, cliRes, conRes, parRes, veiRes, docRes] = await Promise.all([
         supabase.from("lojistas").select("*"),
         supabase.from("clientes").select("*"),
         supabase.from("contratos").select("*"),
         supabase.from("parcelas_fpd").select("*"),
+        supabase.from("veiculos").select("*"),
+        supabase.from("documentos").select("*"),
       ]);
 
       if (lojRes.error) throw lojRes.error;
       if (cliRes.error) throw cliRes.error;
       if (conRes.error) throw conRes.error;
       if (parRes.error) throw parRes.error;
+      if (veiRes.error) throw veiRes.error;
+      if (docRes.error) throw docRes.error;
 
       setLojistas(lojRes.data || []);
       setClientes(cliRes.data || []);
       setContratos(conRes.data || []);
       setParcelas(parRes.data || []);
+      setVeiculos(veiRes.data || []);
+      setDocumentos(docRes.data || []);
     } catch (error: any) {
       console.error(error);
       toast.error("Erro ao carregar os dados do servidor.");
@@ -126,10 +150,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       clientes,
       contratos,
       parcelas,
+      veiculos,
+      documentos,
       views,
       lojistaMetrics,
       loading,
       carregarDados,
+
+      // === LOJISTAS ===
       addLojista: async (data) => {
         try {
           const { error } = await supabase.from("lojistas").insert(data);
@@ -140,25 +168,72 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           toast.error("Erro ao adicionar lojista.");
         }
       },
-      marcarParcelaPaga: async (parcelaId) => {
-        try {
-          // Atualiza via API
-          const { error } = await supabase
-            .from("parcelas_fpd")
-            .update({ status: "Pago" })
-            .eq("id", parcelaId);
 
+      // === CLIENTES ===
+      addCliente: async (data) => {
+        try {
+          const { error } = await supabase.from("clientes").insert(data);
           if (error) throw error;
-          
-          // Otimista na UI local (ou apenas chamar carregarDados)
-          setParcelas((prev) =>
-            prev.map((p) => (p.id === parcelaId ? { ...p, status: "Pago" } : p)),
-          );
-          toast.success("Parcela atualizada para Paga!");
+          toast.success("Cliente cadastrado com sucesso!");
+          await carregarDados();
         } catch (error: any) {
-          toast.error("Falha ao atualizar parcela.");
+          toast.error("Erro ao cadastrar cliente.");
         }
       },
+      editCliente: async (id, data) => {
+        try {
+          const { error } = await supabase.from("clientes").update(data).eq("id", id);
+          if (error) throw error;
+          toast.success("Cliente atualizado!");
+          await carregarDados();
+        } catch (error: any) {
+          toast.error("Erro ao atualizar cliente.");
+        }
+      },
+      deleteCliente: async (id) => {
+        try {
+          const { error } = await supabase.from("clientes").delete().eq("id", id);
+          if (error) throw error;
+          toast.success("Cliente removido.");
+          await carregarDados();
+        } catch (error: any) {
+          toast.error("Erro ao remover cliente.");
+        }
+      },
+
+      // === VEÍCULOS ===
+      addVeiculo: async (data) => {
+        try {
+          const { error } = await supabase.from("veiculos").insert(data);
+          if (error) throw error;
+          toast.success("Veículo cadastrado com sucesso!");
+          await carregarDados();
+        } catch (error: any) {
+          toast.error("Erro ao cadastrar veículo.");
+        }
+      },
+      editVeiculo: async (id, data) => {
+        try {
+          const { error } = await supabase.from("veiculos").update(data).eq("id", id);
+          if (error) throw error;
+          toast.success("Veículo atualizado!");
+          await carregarDados();
+        } catch (error: any) {
+          toast.error("Erro ao atualizar veículo.");
+        }
+      },
+      deleteVeiculo: async (id) => {
+        try {
+          const { error } = await supabase.from("veiculos").delete().eq("id", id);
+          if (error) throw error;
+          toast.success("Veículo removido.");
+          await carregarDados();
+        } catch (error: any) {
+          toast.error("Erro ao remover veículo.");
+        }
+      },
+
+      // === CONTRATOS ===
       criarContrato: async (dados) => {
         try {
           const hoje = new Date();
@@ -195,9 +270,50 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           console.error(error);
           toast.error("Erro ao criar contrato.");
         }
-      }
+      },
+
+      // === PARCELAS ===
+      marcarParcelaPaga: async (parcelaId) => {
+        try {
+          const { error } = await supabase
+            .from("parcelas_fpd")
+            .update({ status: "Pago" })
+            .eq("id", parcelaId);
+
+          if (error) throw error;
+
+          setParcelas((prev) =>
+            prev.map((p) => (p.id === parcelaId ? { ...p, status: "Pago" } : p)),
+          );
+          toast.success("Parcela atualizada para Paga!");
+        } catch (error: any) {
+          toast.error("Falha ao atualizar parcela.");
+        }
+      },
+
+      // === DOCUMENTOS ===
+      addDocumento: async (data) => {
+        try {
+          const { error } = await supabase.from("documentos").insert(data);
+          if (error) throw error;
+          toast.success("Documento adicionado ao cofre!");
+          await carregarDados();
+        } catch (error: any) {
+          toast.error("Erro ao adicionar documento.");
+        }
+      },
+      deleteDocumento: async (id) => {
+        try {
+          const { error } = await supabase.from("documentos").delete().eq("id", id);
+          if (error) throw error;
+          toast.success("Documento removido.");
+          await carregarDados();
+        } catch (error: any) {
+          toast.error("Erro ao remover documento.");
+        }
+      },
     };
-  }, [lojistas, clientes, contratos, parcelas, loading]);
+  }, [lojistas, clientes, contratos, parcelas, veiculos, documentos, loading]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }
