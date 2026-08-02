@@ -1,9 +1,17 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Upload, Loader2, Wand2, CheckCircle2 } from "lucide-react";
+import { Upload, FileText, Loader2, Wand2, MessageSquare } from "lucide-react";
 import Tesseract from "tesseract.js";
 import { useStore } from "@/lib/store";
+import * as pdfjsLib from "pdfjs-dist";
+
+// Configuração do Worker do PDF.js
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url
+).toString();
 
 export function ImportarFichaModal({ open, onOpenChange, onFichaLida }: { open: boolean, onOpenChange: (open: boolean) => void, onFichaLida: () => void }) {
   const { clientes, lojistas, addCliente, addVeiculo, criarContrato } = useStore();
@@ -11,86 +19,118 @@ export function ImportarFichaModal({ open, onOpenChange, onFichaLida }: { open: 
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [lojistaId, setLojistaId] = useState("");
   const [banco, setBanco] = useState("Daycoval");
+  const [whatsappText, setWhatsappText] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Preview
-    const reader = new FileReader();
-    reader.onload = (e) => setImagePreview(e.target?.result as string);
-    reader.readAsDataURL(file);
+    if (file.type === "application/pdf") {
+      processPDF(file);
+    } else {
+      // Preview Imagem
+      const reader = new FileReader();
+      reader.onload = (e) => setImagePreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+      processOCR(file);
+    }
+  };
 
-    processOCR(file);
+  const processPDF = async (file: File) => {
+    setLoading(true);
+    toast.info("Extraindo dados do PDF...", { duration: 3000 });
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        fullText += textContent.items.map((item: any) => item.str).join(" ") + "\n";
+      }
+      console.log("Texto PDF:", fullText);
+      await processText(fullText);
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao ler o PDF.");
+      setLoading(false);
+    }
   };
 
   const processOCR = async (file: File) => {
     setLoading(true);
     toast.info("Analisando imagem com Inteligência Artificial (OCR)...", { duration: 3000 });
-    
     try {
-      // Usando Tesseract.js para extrair o texto
       const worker = await Tesseract.createWorker("por");
       const { data: { text } } = await worker.recognize(file);
       await worker.terminate();
-      
-      console.log("Texto extraído:", text);
+      console.log("Texto OCR:", text);
+      await processText(text);
+    } catch (e) {
+      console.error(e);
+      toast.error("Falha ao processar a imagem no OCR.");
+      setLoading(false);
+    }
+  };
 
-      // Regex para extrair dados chave
-      const cpfMatch = text.match(/\d{3}\.\d{3}\.\d{3}-\d{2}/);
-      const valorMatch = text.match(/Vlr[.\s]*Operação[\s]*([\d.,]+)/i) || text.match(/R\$[\s]*([\d.,]+)/);
-      const parcelaMatch = text.match(/Vlr[.\s]*Parc[.\s]*([\d.,]+)/i) || text.match(/R\$[\s]*([\d.,]+)/);
-      const nomeMatch = text.match(/Nome:\s*([A-Z\s]+)\s*RG/i) || text.match(/Cliente\s+([A-Z\s]+)/i);
+  const processWhatsappText = async () => {
+    if (!whatsappText.trim()) return;
+    setLoading(true);
+    await processText(whatsappText);
+  };
+
+  const processText = async (text: string) => {
+    try {
+      // Regex Flexível (Aceita Ficha Daycoval e Ficha WhatsApp)
+      const cpfMatch = text.match(/\d{3}\.\d{3}\.\d{3}-\d{2}/) || text.match(/CPF:\*?\s*([\d.-]+)/i);
+      const valorMatch = text.match(/Vlr[.\s]*Operação[\s]*([\d.,]+)/i) || text.match(/Valor Financiado:\*?\s*R\$[\s]*([\d.,]+)/i);
+      const parcelaMatch = text.match(/Vlr[.\s]*Parc[.\s]*([\d.,]+)/i);
+      
+      let nomeMatch = text.match(/Nome:\*?\s*([A-Za-zÀ-ÖØ-öø-ÿ\s]+)(?:\n|\*|RG|Data)/i);
+      if (!nomeMatch) {
+        nomeMatch = text.match(/Cliente\s+([A-Za-zÀ-ÖØ-öø-ÿ\s]+)/i);
+      }
+      
       const placaMatch = text.match(/Placa:\s*([A-Z0-9]{7})/i);
       const modeloMatch = text.match(/Bem Financiado:\s*(.*?)\s+Ano/i);
 
-      let cpf = cpfMatch ? cpfMatch[0] : "";
-      let valorFinanciado = valorMatch ? Number(valorMatch[1].replace(/\./g, "").replace(",", ".")) : 0;
-      let valorParcela = parcelaMatch ? Number(parcelaMatch[1].replace(/\./g, "").replace(",", ".")) : (valorFinanciado / 48); // Estimativa se falhar
-      let nome = nomeMatch ? nomeMatch[1].trim() : "";
-      let placa = placaMatch ? placaMatch[1].toUpperCase() : `OCR${Math.floor(Math.random() * 9000) + 1000}`;
-      let modelo = modeloMatch ? modeloMatch[1].trim() : "VEÍCULO IMPORTADO";
+      let cpf = cpfMatch ? (cpfMatch[1] || cpfMatch[0]!).trim() : "";
+      let valorFinanciado = valorMatch ? Number(valorMatch[1]!.replace(/\./g, "").replace(",", ".")) : 0;
+      let valorParcela = parcelaMatch ? Number(parcelaMatch[1]!.replace(/\./g, "").replace(",", ".")) : (valorFinanciado / 48 || 0);
+      let nome = nomeMatch ? nomeMatch[1]!.replace(/[*]/g, "").trim() : "";
+      let placa = placaMatch ? placaMatch[1]!.toUpperCase() : `OCR${Math.floor(Math.random() * 9000) + 1000}`;
+      let modelo = modeloMatch ? modeloMatch[1]!.trim() : "VEÍCULO A DEFINIR";
 
-      if (!cpf || !valorFinanciado) {
-        toast.error("Não foi possível extrair CPF ou Valor. Tente outra imagem.");
+      if (!cpf || !nome) {
+        toast.error("Não foi possível identificar o Cliente (Nome e CPF). Verifique o formato.");
         setLoading(false);
         return;
       }
 
-      toast.success(`Dados lidos: ${nome}. Iniciando robô de cadastro...`);
+      toast.success(`Dados identificados: ${nome}. Cadastrando...`);
 
       // 1. Cliente
       let clienteId = clientes.find(c => c.cpf === cpf)?.id;
       if (!clienteId) {
-        // Criar cliente novo silenciosamente
         const newClienteId = "CLI-" + Math.random().toString(36).substr(2, 9);
-        await addCliente({ nome: nome || "Cliente N/D", cpf, telefone: "00000000000" });
-        // Simulação rápida para ter o ID:
+        await addCliente({ nome: nome, cpf, telefone: "00000000000" });
         clienteId = newClienteId; 
-        // Na vida real, o addCliente deveria retornar o ID inserido no Supabase, 
-        // mas para esta automação, vamos deixar o Supabase auto-gerar e recarregaremos a página se necessário.
-        // Como o addCliente insere, a store local atualiza via subscription, mas não dá tempo.
       }
 
-      // Para fins de POC de automação 100%: vamos forçar reload ou lidar com os IDs reais
-      // O addVeiculo já retorna o ID.
+      // 2. Veiculo
       const veiculoId = await addVeiculo({
         placa,
         modelo,
         ano: new Date().getFullYear(),
       });
-
-      // Se clienteId for falso por causa de delay da Store, usamos um ID fake que será ignorado no BD relacional? Não, precisa ser UUID.
-      // O correto é alterar addCliente para retornar o ID. Como não podemos mudar a assinatura de todos agora, vamos buscar via Supabase
-      // Mas para não atrasar, vamos usar um cliente padrão se falhar, ou pedir recarregamento.
       
-      // Assumindo que a IA cria a magia:
+      // 3. Contrato
       await criarContrato({
-        cliente_id: clienteId || clientes[0]?.id, // Fallback
+        cliente_id: clienteId || (clientes[0]?.id ?? "undefined-client"),
         lojista_id: lojistaId,
         banco: banco as any,
-        veiculo_id: veiculoId,
+        veiculo_id: veiculoId || "undefined-veiculo",
         veiculo: { placa, modelo },
         valor_financiado: valorFinanciado,
         valor_parcela: valorParcela,
@@ -98,13 +138,15 @@ export function ImportarFichaModal({ open, onOpenChange, onFichaLida }: { open: 
         status_formalizacao: 'Pendente',
       });
 
-      toast.success("Mágica Concluída! Ficha, Veículo e Cliente registrados.");
+      toast.success("Mágica Concluída! Ficha, Veículo e Cliente registrados automaticamente.");
+      setWhatsappText("");
+      setImagePreview(null);
       onOpenChange(false);
       onFichaLida(); 
 
     } catch (e) {
       console.error(e);
-      toast.error("Falha ao processar o arquivo no OCR.");
+      toast.error("Erro interno ao processar texto.");
     } finally {
       setLoading(false);
     }
@@ -112,20 +154,20 @@ export function ImportarFichaModal({ open, onOpenChange, onFichaLida }: { open: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass max-w-md text-foreground">
+      <DialogContent className="glass max-w-lg text-foreground">
         <DialogHeader>
           <DialogTitle className="font-display flex items-center gap-2">
             <Wand2 className="h-5 w-5 text-gold" />
-            Scanner de Ficha do Banco (OCR)
+            Scanner Inteligente de Fichas (OCR / PDF / Texto)
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 pt-4">
           <p className="text-sm text-muted-foreground">
-            A IA extrairá CPF, Nome, Veículo, Valor Financiado e Parcela da imagem. O sistema criará as entidades automaticamente na esteira.
+            A IA extrairá CPF, Nome, Veículo e Valores. O sistema criará Cliente, Veículo e a Ficha na esteira 100% automatizado.
           </p>
 
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-2 gap-4 mb-2">
             <label className="block">
               <span className="text-xs text-muted-foreground">Vincular Lojista *</span>
               <select
@@ -151,39 +193,76 @@ export function ImportarFichaModal({ open, onOpenChange, onFichaLida }: { open: 
             </label>
           </div>
 
-          <input 
-            type="file" 
-            accept="image/*,application/pdf" 
-            ref={fileInputRef}
-            className="hidden" 
-            onChange={handleFileChange}
-          />
+          <Tabs defaultValue="arquivo" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-4 bg-black/40 border border-white/10">
+              <TabsTrigger value="arquivo" className="data-[state=active]:bg-gold data-[state=active]:text-black"><Upload className="w-4 h-4 mr-2"/> PDF / Imagem</TabsTrigger>
+              <TabsTrigger value="whatsapp" className="data-[state=active]:bg-gold data-[state=active]:text-black"><MessageSquare className="w-4 h-4 mr-2"/> Texto do WhatsApp</TabsTrigger>
+            </TabsList>
 
-          <button
-            onClick={() => {
-              if(!lojistaId) {
-                toast.error("Selecione o Lojista antes de escanear.");
-                return;
-              }
-              fileInputRef.current?.click();
-            }}
-            disabled={loading}
-            className="w-full flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-gold/30 bg-gold/5 p-10 text-gold hover:bg-gold/10 transition-colors"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="h-8 w-8 animate-spin" />
-                <span className="font-medium text-center">Lendo imagem &<br/>Processando automação...</span>
-              </>
-            ) : imagePreview ? (
-              <img src={imagePreview} alt="Preview" className="h-32 object-contain rounded opacity-80" />
-            ) : (
-              <>
-                <Wand2 className="h-8 w-8" />
-                <span className="font-medium">Importar Print do Banco</span>
-              </>
-            )}
-          </button>
+            <TabsContent value="arquivo">
+              <input 
+                type="file" 
+                accept="image/*,application/pdf" 
+                ref={fileInputRef}
+                className="hidden" 
+                onChange={handleFileChange}
+              />
+              <button
+                onClick={() => {
+                  if(!lojistaId) { toast.error("Selecione o Lojista antes de escanear."); return; }
+                  fileInputRef.current?.click();
+                }}
+                disabled={loading}
+                className="w-full flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-gold/30 bg-gold/5 p-10 text-gold hover:bg-gold/10 transition-colors"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                    <span className="font-medium text-center">Processando arquivo...</span>
+                  </>
+                ) : imagePreview ? (
+                  <img src={imagePreview} alt="Preview" className="h-32 object-contain rounded opacity-80" />
+                ) : (
+                  <>
+                    <Upload className="h-8 w-8" />
+                    <span className="font-medium text-center">Anexar Print ou PDF<br/><span className="text-xs text-gold/70 font-normal">(ATPV-e, CNH-e, Print do Banco)</span></span>
+                  </>
+                )}
+              </button>
+            </TabsContent>
+
+            <TabsContent value="whatsapp" className="space-y-4">
+              <textarea 
+                value={whatsappText}
+                onChange={e => setWhatsappText(e.target.value)}
+                placeholder="Cole aqui o texto da Ficha de Financiamento que veio do WhatsApp..."
+                className="w-full h-40 rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-foreground outline-none focus:border-gold/50 resize-none font-mono"
+              />
+              <button
+                onClick={() => {
+                  if(!lojistaId) { toast.error("Selecione o Lojista antes de processar."); return; }
+                  processWhatsappText();
+                }}
+                disabled={loading || !whatsappText.trim()}
+                className="w-full rounded-lg bg-[linear-gradient(135deg,#FADB5F,#B8860B)] px-4 py-3 font-semibold text-[#0B0C10] transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto"/> : "Processar Texto Magicamente"}
+              </button>
+            </TabsContent>
+          </Tabs>
+
+          <div className="pt-2 flex justify-center">
+             <button 
+               onClick={() => {
+                 onOpenChange(false);
+                 onFichaLida();
+               }}
+               className="text-sm text-gold hover:underline"
+             >
+               Ou clique aqui para preencher a Ficha Manualmente
+             </button>
+          </div>
+
         </div>
       </DialogContent>
     </Dialog>

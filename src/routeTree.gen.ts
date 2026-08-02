@@ -12,8 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CentralRouteImport } from './routes/central'
 import { Route as ClientesRouteImport } from './routes/clientes'
+import { Route as CobrancaRouteImport } from './routes/cobranca'
 import { Route as DocumentosRouteImport } from './routes/documentos'
 import { Route as EsteiraRouteImport } from './routes/esteira'
+import { Route as FabricaRouteImport } from './routes/fabrica'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LojistasRouteImport } from './routes/lojistas'
 import { Route as RelatoriosRouteImport } from './routes/relatorios'
@@ -34,6 +36,11 @@ const ClientesRoute = ClientesRouteImport.update({
   path: '/clientes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CobrancaRoute = CobrancaRouteImport.update({
+  id: '/cobranca',
+  path: '/cobranca',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DocumentosRoute = DocumentosRouteImport.update({
   id: '/documentos',
   path: '/documentos',
@@ -42,6 +49,11 @@ const DocumentosRoute = DocumentosRouteImport.update({
 const EsteiraRoute = EsteiraRouteImport.update({
   id: '/esteira',
   path: '/esteira',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FabricaRoute = FabricaRouteImport.update({
+  id: '/fabrica',
+  path: '/fabrica',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -69,8 +81,10 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/central': typeof CentralRoute
   '/clientes': typeof ClientesRoute
+  '/cobranca': typeof CobrancaRoute
   '/documentos': typeof DocumentosRoute
   '/esteira': typeof EsteiraRoute
+  '/fabrica': typeof FabricaRoute
   '/login': typeof LoginRoute
   '/lojistas': typeof LojistasRoute
   '/relatorios': typeof RelatoriosRoute
@@ -80,8 +94,10 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/central': typeof CentralRoute
   '/clientes': typeof ClientesRoute
+  '/cobranca': typeof CobrancaRoute
   '/documentos': typeof DocumentosRoute
   '/esteira': typeof EsteiraRoute
+  '/fabrica': typeof FabricaRoute
   '/login': typeof LoginRoute
   '/lojistas': typeof LojistasRoute
   '/relatorios': typeof RelatoriosRoute
@@ -92,8 +108,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/central': typeof CentralRoute
   '/clientes': typeof ClientesRoute
+  '/cobranca': typeof CobrancaRoute
   '/documentos': typeof DocumentosRoute
   '/esteira': typeof EsteiraRoute
+  '/fabrica': typeof FabricaRoute
   '/login': typeof LoginRoute
   '/lojistas': typeof LojistasRoute
   '/relatorios': typeof RelatoriosRoute
@@ -105,8 +123,10 @@ export interface FileRouteTypes {
     | '/'
     | '/central'
     | '/clientes'
+    | '/cobranca'
     | '/documentos'
     | '/esteira'
+    | '/fabrica'
     | '/login'
     | '/lojistas'
     | '/relatorios'
@@ -116,8 +136,10 @@ export interface FileRouteTypes {
     | '/'
     | '/central'
     | '/clientes'
+    | '/cobranca'
     | '/documentos'
     | '/esteira'
+    | '/fabrica'
     | '/login'
     | '/lojistas'
     | '/relatorios'
@@ -127,8 +149,10 @@ export interface FileRouteTypes {
     | '/'
     | '/central'
     | '/clientes'
+    | '/cobranca'
     | '/documentos'
     | '/esteira'
+    | '/fabrica'
     | '/login'
     | '/lojistas'
     | '/relatorios'
@@ -139,8 +163,10 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CentralRoute: typeof CentralRoute
   ClientesRoute: typeof ClientesRoute
+  CobrancaRoute: typeof CobrancaRoute
   DocumentosRoute: typeof DocumentosRoute
   EsteiraRoute: typeof EsteiraRoute
+  FabricaRoute: typeof FabricaRoute
   LoginRoute: typeof LoginRoute
   LojistasRoute: typeof LojistasRoute
   RelatoriosRoute: typeof RelatoriosRoute
@@ -170,6 +196,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClientesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cobranca': {
+      id: '/cobranca'
+      path: '/cobranca'
+      fullPath: '/cobranca'
+      preLoaderRoute: typeof CobrancaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/documentos': {
       id: '/documentos'
       path: '/documentos'
@@ -182,6 +215,13 @@ declare module '@tanstack/react-router' {
       path: '/esteira'
       fullPath: '/esteira'
       preLoaderRoute: typeof EsteiraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/fabrica': {
+      id: '/fabrica'
+      path: '/fabrica'
+      fullPath: '/fabrica'
+      preLoaderRoute: typeof FabricaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -219,8 +259,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CentralRoute: CentralRoute,
   ClientesRoute: ClientesRoute,
+  CobrancaRoute: CobrancaRoute,
   DocumentosRoute: DocumentosRoute,
   EsteiraRoute: EsteiraRoute,
+  FabricaRoute: FabricaRoute,
   LoginRoute: LoginRoute,
   LojistasRoute: LojistasRoute,
   RelatoriosRoute: RelatoriosRoute,

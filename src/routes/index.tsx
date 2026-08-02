@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -10,10 +10,12 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { AlertTriangle, Banknote, ShieldCheck, Store, TrendingUp } from "lucide-react";
+import { AlertTriangle, Banknote, ShieldCheck, Store, TrendingUp, Wand2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { LoadingBlock } from "@/components/GoldSpinner";
 import { RiscoBadge } from "@/components/RiscoBadge";
+import { ImportarFichaModal } from "@/components/ImportarFichaModal";
+import { NovoContratoModal } from "@/components/NovoContratoModal";
 import { useStore } from "@/lib/store";
 import { brl, dataBR } from "@/lib/format";
 import { useSimulatedLoad } from "@/hooks/use-simulated-load";
@@ -40,6 +42,8 @@ export const Route = createFileRoute("/")({
 function DashboardPage() {
   const { views, lojistas } = useStore();
   const loading = useSimulatedLoad();
+  const [openOcr, setOpenOcr] = useState(false);
+  const [openContrato, setOpenContrato] = useState(false);
 
   const stats = useMemo(() => {
     const volume = views.reduce((s, v) => s + v.contrato.valor_financiado, 0);
@@ -64,6 +68,16 @@ function DashboardPage() {
         <LoadingBlock />
       ) : (
         <div className="space-y-6">
+          {/* Header Actions */}
+          <div className="flex items-center justify-end">
+            <button
+              onClick={() => setOpenOcr(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#FADB5F,#B8860B)] px-4 py-2.5 text-sm font-semibold text-[#0B0C10] transition-opacity hover:opacity-90 shadow-lg shadow-gold/20"
+            >
+              <Wand2 className="h-4 w-4" /> Nova Ficha (OCR / Manual)
+            </button>
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               icon={<Banknote className="h-5 w-5" />}
@@ -153,6 +167,16 @@ function DashboardPage() {
           </div>
         </div>
       )}
+
+      <ImportarFichaModal 
+        open={openOcr} 
+        onOpenChange={setOpenOcr} 
+        onFichaLida={() => setOpenContrato(true)} 
+      />
+      <NovoContratoModal 
+        open={openContrato} 
+        onOpenChange={setOpenContrato} 
+      />
     </AppShell>
   );
 }

@@ -70,7 +70,7 @@ function FabricaPage() {
   };
 
   return (
-    <AppShell>
+    <AppShell title="Fábrica de Crédito" subtitle="Acompanhamento e Formalização">
       <div className="flex h-full flex-col p-6">
         <div className="mb-8 flex items-center justify-between">
           <div>

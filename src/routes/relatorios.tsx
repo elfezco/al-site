@@ -63,7 +63,7 @@ function RelatoriosPage() {
     dadosFiltrados.forEach(v => {
       counts[v.lojista.razao_social] = (counts[v.lojista.razao_social] || 0) + Number(v.contrato.valor_financiado);
     });
-    return Object.entries(counts).sort((a,b) => b[1] - a[1])[0][0];
+    return Object.entries(counts).sort((a,b) => b[1] - a[1])[0]?.[0] || "N/D";
   }, [dadosFiltrados]);
 
   const exportPDF = () => {

@@ -76,6 +76,7 @@ export function NovoContratoModal({ open, onOpenChange }: { open: boolean, onOpe
           if (draft.nomeImportado && draft.cpfImportado) {
             toast.success(`Cliente ${draft.nomeImportado} importado via OCR! Crie o cadastro ou selecione-o.`);
           }
+        } catch(e){}
       } else {
         setStep(1);
         setPlacaInput("");
@@ -148,7 +149,7 @@ export function NovoContratoModal({ open, onOpenChange }: { open: boolean, onOpe
         valor_financiado: Number(valorFinanciado),
         valor_parcela: Number(valorParcela),
         comissao_promotora: comissaoPromotora ? Number(comissaoPromotora) : 0,
-        valor_troco_na_troca: trocoNaTroca ? Number(trocoNaTroca) : undefined,
+        valor_troco_na_troca: trocoNaTroca ? Number(trocoNaTroca) : 0,
         checklist_dut: checkDut,
         checklist_contrato: checkContrato,
         checklist_biometria: checkBiometria,
