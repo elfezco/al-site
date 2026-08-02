@@ -7,19 +7,33 @@ import { brl } from "@/lib/format";
 
 // Simulador da API FIPE / Placas
 const simularConsultaPlaca = async (placa: string) => {
+  const p = placa.toUpperCase().replace(/[^A-Z0-9]/g, "");
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve({
-        placa: placa.toUpperCase(),
-        marca: "VOLKSWAGEN",
-        modelo: "GOL TRENDLINE 1.0 T.FLEX 12V 5P",
-        anoModelo: 2018,
-        anoFabricacao: 2017,
-        chassi: "9BWAB45U" + Math.floor(Math.random() * 1000000),
-        renavam: "0123" + Math.floor(Math.random() * 100000),
-        valorFipe: 38500.00, // Simulando valor da FIPE
-      });
-    }, 1500); // 1.5s delay
+      if (p === "LRS9B45") {
+        resolve({
+          placa: p,
+          marca: "VOLKSWAGEN",
+          modelo: "SAVEIRO CROSS 1.6 T.FLEX 16V CE",
+          anoModelo: 2021,
+          anoFabricacao: 2020,
+          chassi: "9BWSB45U" + Math.floor(Math.random() * 1000000),
+          renavam: "0123" + Math.floor(Math.random() * 100000),
+          valorFipe: 78500.00,
+        });
+      } else {
+        resolve({
+          placa: p,
+          marca: "VOLKSWAGEN",
+          modelo: "GOL TRENDLINE 1.0 T.FLEX 12V 5P",
+          anoModelo: 2018,
+          anoFabricacao: 2017,
+          chassi: "9BWAB45U" + Math.floor(Math.random() * 1000000),
+          renavam: "0123" + Math.floor(Math.random() * 100000),
+          valorFipe: 38500.00,
+        });
+      }
+    }, 1500);
   });
 };
 
