@@ -8,6 +8,10 @@ export interface Lojista {
   id: string;
   razao_social: string;
   contato_whatsapp: string;
+  socio_nome?: string;
+  socio_telefone?: string;
+  endereco?: string;
+  fichas_enviadas?: number;
 }
 
 export interface Cliente {

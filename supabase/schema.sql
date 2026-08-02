@@ -8,6 +8,10 @@ CREATE TABLE IF NOT EXISTS public.lojistas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   razao_social TEXT NOT NULL,
   contato_whatsapp TEXT NOT NULL,
+  socio_nome TEXT,
+  socio_telefone TEXT,
+  endereco TEXT,
+  fichas_enviadas INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

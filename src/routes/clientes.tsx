@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Search, Trash2 } from "lucide-react";
+import { Plus, Search, Trash2, Edit } from "lucide-react";
 import { z } from "zod";
 import { AppShell } from "@/components/AppShell";
 import { LoadingBlock } from "@/components/GoldSpinner";
@@ -15,6 +15,7 @@ import {
 import { useStore } from "@/lib/store";
 import { soDigitos } from "@/lib/format";
 import { useSimulatedLoad } from "@/hooks/use-simulated-load";
+import type { Cliente } from "@/lib/types";
 
 export const Route = createFileRoute("/clientes")({
   head: () => ({
@@ -40,12 +41,13 @@ function mascararCPF(cpf: string) {
 }
 
 function ClientesPage() {
-  const { clientes, addCliente, deleteCliente } = useStore();
+  const { clientes, addCliente, editCliente, deleteCliente } = useStore();
   const loading = useSimulatedLoad();
   const [open, setOpen] = useState(false);
   const [busca, setBusca] = useState("");
   const [revelarCPFs, setRevelarCPFs] = useState(false);
 
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({
     nome: "",
     cpf: "",
@@ -63,6 +65,28 @@ function ClientesPage() {
       soDigitos(c.cpf).includes(soDigitos(busca))
   );
 
+  const handleOpenNew = () => {
+    setEditingId(null);
+    setForm({ nome: "", cpf: "", rg: "", telefone: "", email: "", data_nascimento: "", endereco: "" });
+    setErros({});
+    setOpen(true);
+  };
+
+  const handleOpenEdit = (c: Cliente) => {
+    setEditingId(c.id);
+    setForm({
+      nome: c.nome,
+      cpf: c.cpf,
+      rg: c.rg || "",
+      telefone: c.telefone,
+      email: c.email || "",
+      data_nascimento: c.data_nascimento || "",
+      endereco: c.endereco || "",
+    });
+    setErros({});
+    setOpen(true);
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = schema.safeParse(form);
@@ -73,7 +97,8 @@ function ClientesPage() {
       toast.error("Verifique os campos destacados");
       return;
     }
-    await addCliente({
+
+    const payload = {
       ...parsed.data,
       cpf: soDigitos(parsed.data.cpf),
       telefone: soDigitos(parsed.data.telefone),
@@ -81,9 +106,14 @@ function ClientesPage() {
       rg: parsed.data.rg || undefined,
       data_nascimento: parsed.data.data_nascimento || undefined,
       endereco: parsed.data.endereco || undefined,
-    });
-    setErros({});
-    setForm({ nome: "", cpf: "", rg: "", telefone: "", email: "", data_nascimento: "", endereco: "" });
+    };
+
+    if (editingId) {
+      await editCliente(editingId, payload);
+    } else {
+      await addCliente(payload);
+    }
+    
     setOpen(false);
   };
 
@@ -113,13 +143,16 @@ function ClientesPage() {
           >
             {revelarCPFs ? "Ocultar CPFs" : "Revelar CPFs"}
           </button>
+          
           <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger className="inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#FADB5F,#B8860B)] px-4 py-2.5 text-sm font-semibold text-[#0B0C10] transition-opacity hover:opacity-90">
-              <Plus className="h-4 w-4" /> Novo Cliente
+            <DialogTrigger asChild>
+              <button onClick={handleOpenNew} className="inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#FADB5F,#B8860B)] px-4 py-2.5 text-sm font-semibold text-[#0B0C10] transition-opacity hover:opacity-90">
+                <Plus className="h-4 w-4" /> Novo Cliente
+              </button>
             </DialogTrigger>
             <DialogContent className="glass max-w-md text-foreground max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle className="font-display">Cadastrar Cliente</DialogTitle>
+                <DialogTitle className="font-display">{editingId ? "Editar Cliente" : "Cadastrar Cliente"}</DialogTitle>
               </DialogHeader>
               <form onSubmit={submit} className="space-y-4">
                 <Field
@@ -174,7 +207,7 @@ function ClientesPage() {
                   type="submit"
                   className="w-full rounded-lg bg-[linear-gradient(135deg,#FADB5F,#B8860B)] px-4 py-2.5 text-sm font-semibold text-[#0B0C10] transition-opacity hover:opacity-90"
                 >
-                  Salvar Cliente
+                  {editingId ? "Salvar Alterações" : "Salvar Cliente"}
                 </button>
               </form>
             </DialogContent>
@@ -200,24 +233,35 @@ function ClientesPage() {
               <tbody>
                 {filtrados.map((c) => (
                   <tr key={c.id} className="border-b border-white/5 last:border-0 hover:bg-white/[0.03]">
-                    <td className="px-5 py-3 font-medium">{c.nome}</td>
-                    <td className="px-5 py-3 text-muted-foreground">
+                    <td className="px-5 py-3 font-medium">
+                      {c.nome}
+                      {c.endereco && <span className="block text-[11px] text-muted-foreground mt-0.5">{c.endereco}</span>}
+                    </td>
+                    <td className="px-5 py-3 text-muted-foreground font-mono">
                       {revelarCPFs ? c.cpf : mascararCPF(c.cpf)}
                     </td>
                     <td className="px-5 py-3">
-                      <div className="text-muted-foreground">{c.telefone}</div>
+                      <div className="text-white">{c.telefone}</div>
                       {c.email && <div className="text-[11px] text-muted-foreground/60">{c.email}</div>}
                     </td>
                     <td className="px-5 py-3 text-muted-foreground text-xs">
                       {new Date(c.created_at || Date.now()).toLocaleDateString("pt-BR")}
                     </td>
                     <td className="px-5 py-3 text-right">
-                      <button
-                        onClick={() => excluir(c.id, c.nome)}
-                        className="inline-flex items-center gap-1.5 rounded-md border border-destructive/30 px-2.5 py-1.5 text-xs text-destructive transition-colors hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      <div className="flex justify-end items-center gap-2">
+                        <button
+                          onClick={() => handleOpenEdit(c)}
+                          className="inline-flex items-center gap-1.5 rounded-md border border-white/20 px-2.5 py-1.5 text-xs text-white transition-colors hover:bg-white/10"
+                        >
+                          <Edit className="h-3.5 w-3.5" /> Editar
+                        </button>
+                        <button
+                          onClick={() => excluir(c.id, c.nome)}
+                          className="inline-flex items-center gap-1.5 rounded-md border border-destructive/30 px-2.5 py-1.5 text-xs text-destructive transition-colors hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

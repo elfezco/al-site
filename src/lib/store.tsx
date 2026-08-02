@@ -19,6 +19,7 @@ interface LojistaMetrics extends Lojista {
   volume: number;
   inadimplentes: number;
   taxaInadimplencia: number;
+  taxaAprovacao: number;
 }
 
 interface StoreValue {
@@ -34,6 +35,8 @@ interface StoreValue {
   carregarDados: () => Promise<void>;
   // Lojistas
   addLojista: (data: Omit<Lojista, "id">) => Promise<void>;
+  editLojista: (id: string, data: Partial<Lojista>) => Promise<void>;
+  deleteLojista: (id: string) => Promise<void>;
   // Clientes
   addCliente: (data: Omit<Cliente, "id">) => Promise<void>;
   editCliente: (id: string, data: Partial<Cliente>) => Promise<void>;
@@ -47,6 +50,7 @@ interface StoreValue {
   marcarParcelaPaga: (parcelaId: string) => Promise<void>;
   // Documentos
   addDocumento: (data: Omit<Documento, "id" | "created_at">) => Promise<void>;
+  editDocumento: (id: string, data: Partial<Documento>) => Promise<void>;
   deleteDocumento: (id: string) => Promise<void>;
 }
 
@@ -142,6 +146,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         volume: own.reduce((s, v) => s + Number(v.contrato.valor_financiado), 0),
         inadimplentes,
         taxaInadimplencia: own.length ? (inadimplentes / own.length) * 100 : 0,
+        taxaAprovacao: l.fichas_enviadas && l.fichas_enviadas > 0 ? (own.length / l.fichas_enviadas) * 100 : (own.length > 0 ? 100 : 0)
       };
     });
 
@@ -166,6 +171,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           await carregarDados();
         } catch (error: any) {
           toast.error("Erro ao adicionar lojista.");
+        }
+      },
+      editLojista: async (id, data) => {
+        try {
+          const { error } = await supabase.from("lojistas").update(data).eq("id", id);
+          if (error) throw error;
+          toast.success("Lojista atualizado!");
+          await carregarDados();
+        } catch (error: any) {
+          toast.error("Erro ao atualizar lojista.");
+        }
+      },
+      deleteLojista: async (id) => {
+        try {
+          const { error } = await supabase.from("lojistas").delete().eq("id", id);
+          if (error) throw error;
+          toast.success("Lojista removido.");
+          await carregarDados();
+        } catch (error: any) {
+          toast.error("Erro ao remover lojista.");
         }
       },
 
@@ -300,6 +325,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           await carregarDados();
         } catch (error: any) {
           toast.error("Erro ao adicionar documento.");
+        }
+      },
+      editDocumento: async (id, data) => {
+        try {
+          const { error } = await supabase.from("documentos").update(data).eq("id", id);
+          if (error) throw error;
+          toast.success("Documento atualizado!");
+          await carregarDados();
+        } catch (error: any) {
+          toast.error("Erro ao atualizar documento.");
         }
       },
       deleteDocumento: async (id) => {
