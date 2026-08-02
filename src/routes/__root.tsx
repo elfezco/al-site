@@ -14,6 +14,9 @@ import { Toaster } from "@/components/ui/sonner";
 import { StoreProvider } from "@/lib/store";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { LoadingBlock } from "@/components/GoldSpinner";
+import { useRouterState, useNavigate } from "@tanstack/react-router";
 
 function NotFoundComponent() {
   return (
@@ -123,18 +126,51 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function AuthBarrier({ children }: { children: ReactNode }) {
+  const { user, loading } = useAuth();
+  const router = useRouterState();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user && router.location.pathname !== "/login") {
+      navigate({ to: "/login" });
+    }
+  }, [user, loading, router.location.pathname, navigate]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0B0C10]">
+        <LoadingBlock label="Verificando autenticação..." />
+      </div>
+    );
+  }
+
+  // Prevent flashing protected content before redirect
+  if (!user && router.location.pathname !== "/login") {
+    return null;
+  }
+
+  return <>{children}</>;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
-      <StoreProvider>
-        <ErrorBoundary>
-          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-          <Outlet />
-        </ErrorBoundary>
-      </StoreProvider>
-      <Toaster position="top-right" />
+      <AuthProvider>
+        <StoreProvider>
+          <ErrorBoundary>
+            <AuthBarrier>
+              {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+              <Outlet />
+            </AuthBarrier>
+          </ErrorBoundary>
+        </StoreProvider>
+        <Toaster position="top-right" theme="dark" toastOptions={{
+          style: { background: "#0B0C10", border: "1px solid rgba(212, 175, 55, 0.3)", color: "white" }
+        }} />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
