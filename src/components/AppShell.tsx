@@ -14,7 +14,8 @@ import {
   Files,
   PieChart,
   Factory,
-  Headset
+  Headset,
+  Megaphone
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Omnisearch } from "./Omnisearch";
@@ -29,7 +30,9 @@ const nav = [
   { to: "/veiculos", label: "Veículos", icon: Car },
   { to: "/documentos", label: "Cofre", icon: Files },
   { to: "/relatorios", label: "Relatórios", icon: PieChart },
+  { to: "/marketing", label: "Marketing B2B", icon: Megaphone },
   { to: "/central", label: "Central de Dados", icon: Database },
+  { to: "/auditoria", label: "Auditoria", icon: ShieldCheck },
 ] as const;
 
 export function AppShell({

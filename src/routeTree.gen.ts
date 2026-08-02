@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuditoriaRouteImport } from './routes/auditoria'
 import { Route as CentralRouteImport } from './routes/central'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as CobrancaRouteImport } from './routes/cobranca'
@@ -18,12 +19,18 @@ import { Route as EsteiraRouteImport } from './routes/esteira'
 import { Route as FabricaRouteImport } from './routes/fabrica'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LojistasRouteImport } from './routes/lojistas'
+import { Route as MarketingRouteImport } from './routes/marketing'
 import { Route as RelatoriosRouteImport } from './routes/relatorios'
 import { Route as VeiculosRouteImport } from './routes/veiculos'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuditoriaRoute = AuditoriaRouteImport.update({
+  id: '/auditoria',
+  path: '/auditoria',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CentralRoute = CentralRouteImport.update({
@@ -66,6 +73,11 @@ const LojistasRoute = LojistasRouteImport.update({
   path: '/lojistas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MarketingRoute = MarketingRouteImport.update({
+  id: '/marketing',
+  path: '/marketing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RelatoriosRoute = RelatoriosRouteImport.update({
   id: '/relatorios',
   path: '/relatorios',
@@ -79,6 +91,7 @@ const VeiculosRoute = VeiculosRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auditoria': typeof AuditoriaRoute
   '/central': typeof CentralRoute
   '/clientes': typeof ClientesRoute
   '/cobranca': typeof CobrancaRoute
@@ -87,11 +100,13 @@ export interface FileRoutesByFullPath {
   '/fabrica': typeof FabricaRoute
   '/login': typeof LoginRoute
   '/lojistas': typeof LojistasRoute
+  '/marketing': typeof MarketingRoute
   '/relatorios': typeof RelatoriosRoute
   '/veiculos': typeof VeiculosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auditoria': typeof AuditoriaRoute
   '/central': typeof CentralRoute
   '/clientes': typeof ClientesRoute
   '/cobranca': typeof CobrancaRoute
@@ -100,12 +115,14 @@ export interface FileRoutesByTo {
   '/fabrica': typeof FabricaRoute
   '/login': typeof LoginRoute
   '/lojistas': typeof LojistasRoute
+  '/marketing': typeof MarketingRoute
   '/relatorios': typeof RelatoriosRoute
   '/veiculos': typeof VeiculosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auditoria': typeof AuditoriaRoute
   '/central': typeof CentralRoute
   '/clientes': typeof ClientesRoute
   '/cobranca': typeof CobrancaRoute
@@ -114,6 +131,7 @@ export interface FileRoutesById {
   '/fabrica': typeof FabricaRoute
   '/login': typeof LoginRoute
   '/lojistas': typeof LojistasRoute
+  '/marketing': typeof MarketingRoute
   '/relatorios': typeof RelatoriosRoute
   '/veiculos': typeof VeiculosRoute
 }
@@ -121,6 +139,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auditoria'
     | '/central'
     | '/clientes'
     | '/cobranca'
@@ -129,11 +148,13 @@ export interface FileRouteTypes {
     | '/fabrica'
     | '/login'
     | '/lojistas'
+    | '/marketing'
     | '/relatorios'
     | '/veiculos'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auditoria'
     | '/central'
     | '/clientes'
     | '/cobranca'
@@ -142,11 +163,13 @@ export interface FileRouteTypes {
     | '/fabrica'
     | '/login'
     | '/lojistas'
+    | '/marketing'
     | '/relatorios'
     | '/veiculos'
   id:
     | '__root__'
     | '/'
+    | '/auditoria'
     | '/central'
     | '/clientes'
     | '/cobranca'
@@ -155,12 +178,14 @@ export interface FileRouteTypes {
     | '/fabrica'
     | '/login'
     | '/lojistas'
+    | '/marketing'
     | '/relatorios'
     | '/veiculos'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuditoriaRoute: typeof AuditoriaRoute
   CentralRoute: typeof CentralRoute
   ClientesRoute: typeof ClientesRoute
   CobrancaRoute: typeof CobrancaRoute
@@ -169,6 +194,7 @@ export interface RootRouteChildren {
   FabricaRoute: typeof FabricaRoute
   LoginRoute: typeof LoginRoute
   LojistasRoute: typeof LojistasRoute
+  MarketingRoute: typeof MarketingRoute
   RelatoriosRoute: typeof RelatoriosRoute
   VeiculosRoute: typeof VeiculosRoute
 }
@@ -180,6 +206,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auditoria': {
+      id: '/auditoria'
+      path: '/auditoria'
+      fullPath: '/auditoria'
+      preLoaderRoute: typeof AuditoriaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/central': {
@@ -238,6 +271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LojistasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/marketing': {
+      id: '/marketing'
+      path: '/marketing'
+      fullPath: '/marketing'
+      preLoaderRoute: typeof MarketingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/relatorios': {
       id: '/relatorios'
       path: '/relatorios'
@@ -257,6 +297,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuditoriaRoute: AuditoriaRoute,
   CentralRoute: CentralRoute,
   ClientesRoute: ClientesRoute,
   CobrancaRoute: CobrancaRoute,
@@ -265,6 +306,7 @@ const rootRouteChildren: RootRouteChildren = {
   FabricaRoute: FabricaRoute,
   LoginRoute: LoginRoute,
   LojistasRoute: LojistasRoute,
+  MarketingRoute: MarketingRoute,
   RelatoriosRoute: RelatoriosRoute,
   VeiculosRoute: VeiculosRoute,
 }
