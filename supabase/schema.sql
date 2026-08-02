@@ -53,3 +53,9 @@ CREATE POLICY "Allow authenticated full access lojistas" ON public.lojistas FOR 
 CREATE POLICY "Allow authenticated full access clientes" ON public.clientes FOR ALL TO authenticated USING (true);
 CREATE POLICY "Allow authenticated full access contratos" ON public.contratos FOR ALL TO authenticated USING (true);
 CREATE POLICY "Allow authenticated full access parcelas" ON public.parcelas_fpd FOR ALL TO authenticated USING (true);
+
+-- Performance Indexes
+CREATE INDEX idx_clientes_cpf ON public.clientes (cpf);
+CREATE INDEX idx_parcelas_status ON public.parcelas_fpd (status);
+CREATE INDEX idx_parcelas_vencimento ON public.parcelas_fpd (data_vencimento);
+CREATE INDEX idx_contratos_lojista ON public.contratos (lojista_id);

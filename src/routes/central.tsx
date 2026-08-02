@@ -5,7 +5,8 @@ import { AppShell } from "@/components/AppShell";
 import { LoadingBlock } from "@/components/GoldSpinner";
 import { CobrancaModal } from "@/components/CobrancaModal";
 import { RiscoBadge, riscoLabel } from "@/components/RiscoBadge";
-import { brl, dataBR, diasAte } from "@/lib/format";
+import { brl, dataBR, diasAte, mascararCpf } from "@/lib/format";
+import { Eye, EyeOff } from "lucide-react";
 import type { ContratoView, RiscoNivel, Contrato, Cliente, Lojista, ParcelaFPD } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -33,6 +34,8 @@ function CentralPage() {
   const [busca, setBusca] = useState("");
   const [banco, setBanco] = useState("todos");
   const [lojista, setLojista] = useState("todos");
+  const [revelados, setRevelados] = useState<Record<string, boolean>>({});
+  const isAdmin = true; // Simulação de role de admin
   // Filtro por status precisaria de lógica complexa no banco, então por enquanto 
   // vamos focar na paginação base de contratos.
   
@@ -159,8 +162,26 @@ function CentralPage() {
                   >
                     <td className="px-5 py-3 font-mono text-xs text-[#D4AF37]">{v.contrato.id}</td>
                     <td className="px-5 py-3">
-                      <p className="font-medium">{v.cliente.nome}</p>
-                      <p className="text-[11px] text-muted-foreground">{v.cliente.cpf}</p>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{v.cliente.nome}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {revelados[v.cliente.id] ? v.cliente.cpf : mascararCpf(v.cliente.cpf)}
+                          </p>
+                        </div>
+                        {isAdmin && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRevelados(prev => ({ ...prev, [v.cliente.id]: !prev[v.cliente.id] }));
+                            }}
+                            className="text-muted-foreground hover:text-[#D4AF37] transition-colors p-1"
+                            title="Revelar CPF"
+                          >
+                            {revelados[v.cliente.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        )}
+                      </div>
                     </td>
                     <td className="px-5 py-3 text-xs text-muted-foreground">
                       {v.contrato.veiculo.modelo}

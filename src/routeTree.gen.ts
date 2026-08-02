@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CentralRouteImport } from './routes/central'
 import { Route as EsteiraRouteImport } from './routes/esteira'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as LojistasRouteImport } from './routes/lojistas'
 
 const IndexRoute = IndexRouteImport.update({
@@ -29,6 +30,11 @@ const EsteiraRoute = EsteiraRouteImport.update({
   path: '/esteira',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LojistasRoute = LojistasRouteImport.update({
   id: '/lojistas',
   path: '/lojistas',
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/central': typeof CentralRoute
   '/esteira': typeof EsteiraRoute
+  '/login': typeof LoginRoute
   '/lojistas': typeof LojistasRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/central': typeof CentralRoute
   '/esteira': typeof EsteiraRoute
+  '/login': typeof LoginRoute
   '/lojistas': typeof LojistasRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,22 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/central': typeof CentralRoute
   '/esteira': typeof EsteiraRoute
+  '/login': typeof LoginRoute
   '/lojistas': typeof LojistasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/central' | '/esteira' | '/lojistas'
+  fullPaths: '/' | '/central' | '/esteira' | '/login' | '/lojistas'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/central' | '/esteira' | '/lojistas'
-  id: '__root__' | '/' | '/central' | '/esteira' | '/lojistas'
+  to: '/' | '/central' | '/esteira' | '/login' | '/lojistas'
+  id: '__root__' | '/' | '/central' | '/esteira' | '/login' | '/lojistas'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CentralRoute: typeof CentralRoute
   EsteiraRoute: typeof EsteiraRoute
+  LoginRoute: typeof LoginRoute
   LojistasRoute: typeof LojistasRoute
 }
 
@@ -92,6 +102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EsteiraRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lojistas': {
       id: '/lojistas'
       path: '/lojistas'
@@ -106,8 +123,19 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CentralRoute: CentralRoute,
   EsteiraRoute: EsteiraRoute,
+  LoginRoute: LoginRoute,
   LojistasRoute: LojistasRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

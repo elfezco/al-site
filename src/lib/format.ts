@@ -29,3 +29,15 @@ export const isoOffset = (days: number): string => {
 };
 
 export const soDigitos = (v: string): string => v.replace(/\D/g, "");
+
+export const mascararCpf = (cpf: string): string => {
+  const digits = soDigitos(cpf);
+  if (digits.length !== 11) return cpf;
+  return `***.${digits.slice(3, 6)}.${digits.slice(6, 9)}-**`;
+};
+
+export const mascararTelefone = (tel: string): string => {
+  const digits = soDigitos(tel);
+  if (digits.length < 10) return tel;
+  return `** *****-${digits.slice(-4)}`;
+};
