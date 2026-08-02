@@ -45,14 +45,14 @@ function LoginPage() {
     <div className="min-h-screen bg-[#0B0C10] flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-surface border border-[#D4AF37]/30 rounded-2xl p-8 shadow-2xl">
         <div className="flex flex-col items-center mb-8">
-          <div className="bg-[#D4AF37]/10 p-3 rounded-full mb-4 ring-1 ring-[#D4AF37]/50">
-            <ShieldCheck className="w-10 h-10 text-[#D4AF37]" />
+          <div className="mb-4">
+            <img src="/logo.png" alt="AL Finanças Logo" className="h-20 w-20 object-contain rounded-full shadow-lg shadow-gold/20" />
           </div>
           <h1 className="text-2xl font-display font-bold text-white tracking-wide">
-            AL Finanças & Negócios
+            AL Finanças
           </h1>
-          <p className="text-muted-foreground text-sm mt-2">
-            Gestão de Risco FPD (B2B2C)
+          <p className="text-muted-foreground text-sm mt-1">
+            Serviços & Negócios
           </p>
         </div>
 

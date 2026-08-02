@@ -12,12 +12,17 @@ import {
   Users,
   Car,
   Files,
-  PieChart
+  PieChart,
+  Factory,
+  Headset
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Omnisearch } from "./Omnisearch";
 
 const nav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/fabrica", label: "Fábrica de Crédito", icon: Factory },
+  { to: "/cobranca", label: "Hub de Cobrança", icon: Headset },
   { to: "/esteira", label: "Esteira de Risco", icon: KanbanSquare },
   { to: "/lojistas", label: "Lojistas", icon: Store },
   { to: "/clientes", label: "Clientes", icon: Users },
@@ -74,9 +79,7 @@ export function AppShell({
         )}
       >
         <div className="flex items-center gap-3 px-5 py-6">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[linear-gradient(135deg,#FADB5F,#B8860B)]">
-            <ShieldCheck className="h-5 w-5 text-[#0B0C10]" />
-          </span>
+          <img src="/logo.png" alt="Logo" className="h-9 w-9 shrink-0 rounded-full object-cover" />
           {!collapsed && (
             <div className="min-w-0">
               <p className="gold-text font-display text-sm font-bold leading-tight">AL Finanças</p>
@@ -104,7 +107,10 @@ export function AppShell({
           />
           <aside className="glass absolute inset-y-0 left-0 flex w-[264px] flex-col py-6">
             <div className="mb-4 flex items-center justify-between px-5">
-              <p className="gold-text font-display text-sm font-bold">AL Finanças</p>
+              <div className="flex items-center gap-3">
+                <img src="/logo.png" alt="Logo" className="h-8 w-8 rounded-full object-cover" />
+                <p className="gold-text font-display text-sm font-bold">AL Finanças</p>
+              </div>
               <button onClick={() => setMobileOpen(false)} aria-label="Fechar">
                 <X className="h-5 w-5 text-muted-foreground" />
               </button>
@@ -130,6 +136,7 @@ export function AppShell({
             </div>
           </div>
         </header>
+        <Omnisearch />
         <main className="px-5 py-6 sm:px-8 sm:py-8">{children}</main>
       </div>
     </div>

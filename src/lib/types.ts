@@ -44,6 +44,14 @@ export interface Contrato {
   veiculo?: { placa: string; modelo: string }; // legado JSONB
   valor_financiado: number;
   valor_parcela: number;
+  comissao_promotora?: number;
+  checklist_dut?: boolean;
+  checklist_contrato?: boolean;
+  checklist_biometria?: boolean;
+  valor_troco_na_troca?: number;
+  status_formalizacao?: 'Pendente' | 'Devolvido' | 'Formalizado';
+  link_segunda_via?: string;
+  status_comissao?: 'Estimada' | 'Recebida';
   data_contrato: string;
 }
 

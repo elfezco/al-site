@@ -14,7 +14,9 @@ import {
 } from "@/components/ui/dialog";
 import { useStore, type LojistaMetrics } from "@/lib/store";
 import { brl, soDigitos } from "@/lib/format";
+import { maskPhone } from "@/lib/utils";
 import { useSimulatedLoad } from "@/hooks/use-simulated-load";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/lojistas")({
   head: () => ({
@@ -45,6 +47,7 @@ function LojistasPage() {
     contato_whatsapp: "",
     socio_nome: "",
     socio_telefone: "",
+    cep: "",
     endereco: "",
     fichas_enviadas: 0,
   });
@@ -55,7 +58,7 @@ function LojistasPage() {
 
   const handleOpenNew = () => {
     setEditingId(null);
-    setForm({ razao_social: "", contato_whatsapp: "", socio_nome: "", socio_telefone: "", endereco: "", fichas_enviadas: 0 });
+    setForm({ razao_social: "", contato_whatsapp: "", socio_nome: "", socio_telefone: "", cep: "", endereco: "", fichas_enviadas: 0 });
     setErros({});
     setOpen(true);
   };
@@ -67,11 +70,29 @@ function LojistasPage() {
       contato_whatsapp: l.contato_whatsapp,
       socio_nome: l.socio_nome || "",
       socio_telefone: l.socio_telefone || "",
+      cep: "",
       endereco: l.endereco || "",
       fichas_enviadas: l.fichas_enviadas || 0,
     });
     setErros({});
     setOpen(true);
+  };
+
+  const handleCepBlur = async () => {
+    const limpo = soDigitos(form.cep);
+    if (limpo.length !== 8) return;
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${limpo}/json/`);
+      const data = await res.json();
+      if (!data.erro) {
+        setForm(f => ({ ...f, endereco: `${data.logradouro}, , ${data.bairro} - ${data.localidade}/${data.uf}` }));
+        toast.success("Endereço preenchido via CEP!");
+      } else {
+        toast.error("CEP não encontrado.");
+      }
+    } catch (e) {
+      toast.error("Erro ao buscar CEP.");
+    }
   };
 
   const excluir = async (id: string, nome: string) => {
@@ -108,38 +129,23 @@ function LojistasPage() {
 
   return (
     <AppShell title="Lojistas parceiros" subtitle="CRM B2B, performance de aprovação e inadimplência">
-      {/* Ranking Cards */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2">
-        <div className="flex items-center gap-4 rounded-xl border border-gold/30 bg-[linear-gradient(135deg,rgba(250,219,95,0.05),rgba(184,134,11,0.05))] p-5">
-          <div className="grid h-12 w-12 place-items-center rounded-full bg-gold/20 text-gold">
-            <Award className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Melhor Conversão</p>
-            <p className="font-display text-lg font-bold text-white">{topAprovacao ? topAprovacao.razao_social : "N/D"}</p>
-            <p className="text-xs text-emerald-400">{topAprovacao ? `${topAprovacao.taxaAprovacao.toFixed(1)}% de aprovação` : "—"}</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-4 rounded-xl border border-white/10 bg-black/40 p-5">
-          <div className="grid h-12 w-12 place-items-center rounded-full bg-white/10 text-white">
-            <TrendingUp className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Maior Volume</p>
-            <p className="font-display text-lg font-bold text-white">{topVolume ? topVolume.razao_social : "N/D"}</p>
-            <p className="text-xs text-gold">{topVolume ? brl(topVolume.volume) : "—"}</p>
-          </div>
-        </div>
-      </div>
+      
+      <Tabs defaultValue="gestao">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <TabsList className="bg-black/40 border border-white/5">
+            <TabsTrigger value="gestao">Gestão de Lojistas</TabsTrigger>
+            <TabsTrigger value="crm">Dashboard CRM</TabsTrigger>
+          </TabsList>
 
-      <div className="mb-5 flex justify-end">
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <button onClick={handleOpenNew} className="inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#FADB5F,#B8860B)] px-4 py-2.5 text-sm font-semibold text-[#0B0C10] transition-opacity hover:opacity-90">
-              <Plus className="h-4 w-4" /> Novo Lojista
-            </button>
-          </DialogTrigger>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <button onClick={handleOpenNew} className="inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#FADB5F,#B8860B)] px-4 py-2.5 text-sm font-semibold text-[#0B0C10] transition-opacity hover:opacity-90">
+                <Plus className="h-4 w-4" /> Novo Lojista
+              </button>
+            </DialogTrigger>
+
+
+
           <DialogContent className="glass max-w-md text-foreground max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="font-display">{editingId ? "Editar Lojista" : "Cadastrar Lojista"}</DialogTitle>
@@ -156,7 +162,7 @@ function LojistasPage() {
                   label="WhatsApp da Loja *"
                   value={form.contato_whatsapp}
                   error={erros["contato_whatsapp"]}
-                  onChange={(v) => setForm((f) => ({ ...f, contato_whatsapp: v }))}
+                  onChange={(v) => setForm((f) => ({ ...f, contato_whatsapp: maskPhone(v) }))}
                 />
                 <Field
                   label="Total de Fichas (Mês)"
@@ -180,17 +186,29 @@ function LojistasPage() {
                     label="Telefone do Sócio"
                     value={form.socio_telefone}
                     error={erros["socio_telefone"]}
-                    onChange={(v) => setForm((f) => ({ ...f, socio_telefone: v }))}
+                    onChange={(v) => setForm((f) => ({ ...f, socio_telefone: maskPhone(v) }))}
                   />
                 </div>
               </div>
               
-              <Field
-                label="Endereço Completo"
-                value={form.endereco}
-                error={erros["endereco"]}
-                onChange={(v) => setForm((f) => ({ ...f, endereco: v }))}
-              />
+              <div className="grid grid-cols-3 gap-4">
+                <Field
+                  label="CEP (Auto Busca)"
+                  value={form.cep}
+                  onChange={(v) => setForm((f) => ({ ...f, cep: v }))}
+                  onBlur={handleCepBlur}
+                  placeholder="Somente números"
+                />
+                <div className="col-span-2">
+                  <Field
+                    label="Endereço da Loja"
+                    value={form.endereco}
+                    error={erros["endereco"]}
+                    onChange={(v) => setForm((f) => ({ ...f, endereco: v }))}
+                  />
+                </div>
+              </div>
+
               <button
                 type="submit"
                 className="w-full rounded-lg bg-[linear-gradient(135deg,#FADB5F,#B8860B)] px-4 py-2.5 text-sm font-semibold text-[#0B0C10] transition-opacity hover:opacity-90"
@@ -202,11 +220,12 @@ function LojistasPage() {
         </Dialog>
       </div>
 
-      {loading ? (
-        <LoadingBlock label="Carregando parceiros…" />
-      ) : (
-        <div className="card-surface overflow-hidden rounded-xl shadow-[var(--shadow-elegant)]">
-          <div className="overflow-x-auto">
+      <TabsContent value="gestao">
+        {loading ? (
+          <LoadingBlock label="Carregando parceiros…" />
+        ) : (
+          <div className="card-surface overflow-hidden rounded-xl shadow-[var(--shadow-elegant)]">
+            <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] text-sm">
               <thead>
                 <tr className="border-b border-white/8 text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -274,7 +293,43 @@ function LojistasPage() {
             </table>
           </div>
         </div>
-      )}
+        )}
+      </TabsContent>
+
+      <TabsContent value="crm">
+        <div className="mb-6 grid gap-4 sm:grid-cols-2">
+          <div className="flex items-center gap-4 rounded-xl border border-gold/30 bg-[linear-gradient(135deg,rgba(250,219,95,0.05),rgba(184,134,11,0.05))] p-5">
+            <div className="grid h-12 w-12 place-items-center rounded-full bg-gold/20 text-gold">
+              <Award className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Melhor Conversão</p>
+              <p className="font-display text-lg font-bold text-white">{topAprovacao ? topAprovacao.razao_social : "N/D"}</p>
+              <p className="text-xs text-emerald-400">{topAprovacao ? `${topAprovacao.taxaAprovacao.toFixed(1)}% de aprovação` : "—"}</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4 rounded-xl border border-white/10 bg-black/40 p-5">
+            <div className="grid h-12 w-12 place-items-center rounded-full bg-white/10 text-white">
+              <TrendingUp className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Maior Volume</p>
+              <p className="font-display text-lg font-bold text-white">{topVolume ? topVolume.razao_social : "N/D"}</p>
+              <p className="text-xs text-gold">{topVolume ? brl(topVolume.volume) : "—"}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="glass rounded-xl p-6 flex flex-col items-center justify-center text-center min-h-[300px]">
+          <Award className="h-16 w-16 text-muted-foreground/30 mb-4" />
+          <h3 className="font-display text-xl font-semibold text-white">Heatmap & Visitas Comerciais</h3>
+          <p className="text-muted-foreground max-w-md mt-2">
+            Este painel será ativado na Fase 3, onde você poderá registrar o Histórico de Visitas (Data, Vendedor, Observações) e ver um mapa de calor dos lojistas mais ativos.
+          </p>
+        </div>
+      </TabsContent>
+      </Tabs>
     </AppShell>
   );
 }
@@ -284,13 +339,17 @@ function Field({
   value,
   error,
   onChange,
+  onBlur,
   type = "text",
+  placeholder,
 }: {
   label: string;
-  value: string;
+  value: string | number;
   error?: string | undefined;
   onChange: (v: string) => void;
+  onBlur?: () => void;
   type?: string;
+  placeholder?: string;
 }) {
   return (
     <label className="block">
@@ -298,7 +357,9 @@ function Field({
       <input
         type={type}
         value={value}
+        placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
         className="mt-1 w-full rounded-lg border border-white/12 bg-black/30 px-3 py-2 text-sm outline-none transition-colors focus:border-gold/60"
       />
       {error && <span className="mt-1 block text-[11px] text-destructive">{error}</span>}

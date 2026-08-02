@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { useStore } from "@/lib/store";
 import { soDigitos } from "@/lib/format";
+import { maskCPF, maskPhone, validarCPF } from "@/lib/utils";
 import { useSimulatedLoad } from "@/hooks/use-simulated-load";
 import type { Cliente } from "@/lib/types";
 
@@ -55,6 +56,7 @@ function ClientesPage() {
     telefone: "",
     email: "",
     data_nascimento: "",
+    cep: "",
     endereco: "",
   });
   const [erros, setErros] = useState<Record<string, string>>({});
@@ -67,7 +69,7 @@ function ClientesPage() {
 
   const handleOpenNew = () => {
     setEditingId(null);
-    setForm({ nome: "", cpf: "", rg: "", telefone: "", email: "", data_nascimento: "", endereco: "" });
+    setForm({ nome: "", cpf: "", rg: "", telefone: "", email: "", data_nascimento: "", cep: "", endereco: "" });
     setErros({});
     setOpen(true);
   };
@@ -81,18 +83,47 @@ function ClientesPage() {
       telefone: c.telefone,
       email: c.email || "",
       data_nascimento: c.data_nascimento || "",
+      cep: "",
       endereco: c.endereco || "",
     });
     setErros({});
     setOpen(true);
   };
 
+  const handleCepBlur = async () => {
+    const limpo = soDigitos(form.cep);
+    if (limpo.length !== 8) return;
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${limpo}/json/`);
+      const data = await res.json();
+      if (!data.erro) {
+        setForm(f => ({ ...f, endereco: `${data.logradouro}, , ${data.bairro} - ${data.localidade}/${data.uf}` }));
+        toast.success("Endereço preenchido via CEP!");
+      } else {
+        toast.error("CEP não encontrado.");
+      }
+    } catch (e) {
+      toast.error("Erro ao buscar CEP.");
+    }
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = schema.safeParse(form);
+    
+    let temErro = false;
+    const next: Record<string, string> = {};
     if (!parsed.success) {
-      const next: Record<string, string> = {};
+      temErro = true;
       for (const issue of parsed.error.issues) next[String(issue.path[0])] = issue.message;
+    }
+    
+    if (!validarCPF(form.cpf)) {
+      temErro = true;
+      next["cpf"] = "CPF inválido na base RFB";
+    }
+
+    if (temErro) {
       setErros(next);
       toast.error("Verifique os campos destacados");
       return;
@@ -166,7 +197,7 @@ function ClientesPage() {
                     label="CPF *"
                     value={form.cpf}
                     error={erros["cpf"]}
-                    onChange={(v) => setForm((f) => ({ ...f, cpf: v }))}
+                    onChange={(v) => setForm((f) => ({ ...f, cpf: maskCPF(v) }))}
                   />
                   <Field
                     label="RG"
@@ -180,7 +211,7 @@ function ClientesPage() {
                     label="Telefone *"
                     value={form.telefone}
                     error={erros["telefone"]}
-                    onChange={(v) => setForm((f) => ({ ...f, telefone: v }))}
+                    onChange={(v) => setForm((f) => ({ ...f, telefone: maskPhone(v) }))}
                   />
                   <Field
                     label="Data de Nasc."
@@ -197,12 +228,23 @@ function ClientesPage() {
                   error={erros["email"]}
                   onChange={(v) => setForm((f) => ({ ...f, email: v }))}
                 />
-                <Field
-                  label="Endereço"
-                  value={form.endereco}
-                  error={erros["endereco"]}
-                  onChange={(v) => setForm((f) => ({ ...f, endereco: v }))}
-                />
+                <div className="grid grid-cols-3 gap-4">
+                  <Field
+                    label="CEP (Auto Busca)"
+                    value={form.cep}
+                    onChange={(v) => setForm((f) => ({ ...f, cep: v }))}
+                    onBlur={handleCepBlur}
+                    placeholder="Somente números"
+                  />
+                  <div className="col-span-2">
+                    <Field
+                      label="Endereço Completo"
+                      value={form.endereco}
+                      error={erros["endereco"]}
+                      onChange={(v) => setForm((f) => ({ ...f, endereco: v }))}
+                    />
+                  </div>
+                </div>
                 <button
                   type="submit"
                   className="w-full rounded-lg bg-[linear-gradient(135deg,#FADB5F,#B8860B)] px-4 py-2.5 text-sm font-semibold text-[#0B0C10] transition-opacity hover:opacity-90"
@@ -286,13 +328,17 @@ function Field({
   value,
   error,
   onChange,
+  onBlur,
   type = "text",
+  placeholder
 }: {
   label: string;
   value: string;
   error?: string | undefined;
   onChange: (v: string) => void;
+  onBlur?: () => void;
   type?: string;
+  placeholder?: string;
 }) {
   return (
     <label className="block">
@@ -300,7 +346,9 @@ function Field({
       <input
         type={type}
         value={value}
+        placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
         className="mt-1 w-full rounded-lg border border-white/12 bg-black/30 px-3 py-2 text-sm outline-none transition-colors focus:border-gold/60"
       />
       {error && <span className="mt-1 block text-[11px] text-destructive">{error}</span>}

@@ -42,7 +42,7 @@ interface StoreValue {
   editCliente: (id: string, data: Partial<Cliente>) => Promise<void>;
   deleteCliente: (id: string) => Promise<void>;
   // Veículos
-  addVeiculo: (data: Omit<Veiculo, "id">) => Promise<void>;
+  addVeiculo: (data: Omit<Veiculo, "id">) => Promise<string | undefined>;
   editVeiculo: (id: string, data: Partial<Veiculo>) => Promise<void>;
   deleteVeiculo: (id: string) => Promise<void>;
   // Contratos & Parcelas
@@ -229,12 +229,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       // === VEÍCULOS ===
       addVeiculo: async (data) => {
         try {
-          const { error } = await supabase.from("veiculos").insert(data);
+          const { data: resData, error } = await supabase.from("veiculos").insert(data).select().single();
           if (error) throw error;
           toast.success("Veículo cadastrado com sucesso!");
           await carregarDados();
+          return resData.id;
         } catch (error: any) {
           toast.error("Erro ao cadastrar veículo.");
+          return undefined;
         }
       },
       editVeiculo: async (id, data) => {

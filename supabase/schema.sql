@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS public.lojistas (
   socio_telefone TEXT,
   endereco TEXT,
   fichas_enviadas INTEGER DEFAULT 0,
+  tenant_id TEXT DEFAULT 'ALFIN',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -27,6 +28,7 @@ CREATE TABLE IF NOT EXISTS public.clientes (
   email TEXT,
   data_nascimento DATE,
   endereco TEXT,
+  tenant_id TEXT DEFAULT 'ALFIN',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -41,6 +43,7 @@ CREATE TABLE IF NOT EXISTS public.veiculos (
   cor TEXT,
   chassi TEXT,
   renavam TEXT,
+  tenant_id TEXT DEFAULT 'ALFIN',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -56,7 +59,16 @@ CREATE TABLE IF NOT EXISTS public.contratos (
   veiculo JSONB, -- legado, mantido para compatibilidade
   valor_financiado NUMERIC NOT NULL,
   valor_parcela NUMERIC NOT NULL,
+  comissao_promotora NUMERIC, -- Faturamento da AL Finanças
+  checklist_dut BOOLEAN DEFAULT false,
+  checklist_contrato BOOLEAN DEFAULT false,
+  checklist_biometria BOOLEAN DEFAULT false,
+  valor_troco_na_troca NUMERIC,
+  status_formalizacao TEXT DEFAULT 'Pendente' CHECK (status_formalizacao IN ('Pendente', 'Devolvido', 'Formalizado')),
+  link_segunda_via TEXT,
+  status_comissao TEXT DEFAULT 'Estimada' CHECK (status_comissao IN ('Estimada', 'Recebida')),
   data_contrato DATE NOT NULL,
+  tenant_id TEXT DEFAULT 'ALFIN',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -71,6 +83,7 @@ CREATE TABLE IF NOT EXISTS public.parcelas_fpd (
   status TEXT NOT NULL CHECK (status IN ('Pendente', 'Pago', 'Atrasado')),
   valor_boleto NUMERIC,
   nosso_numero TEXT,
+  tenant_id TEXT DEFAULT 'ALFIN',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(contrato_id, numero_parcela)
 );
@@ -85,6 +98,62 @@ CREATE TABLE IF NOT EXISTS public.documentos (
   tipo TEXT NOT NULL CHECK (tipo IN ('CNH', 'Comprovante Residência', 'Contrato Assinado', 'Boleto', 'Outro')),
   url TEXT NOT NULL,
   tamanho_bytes INTEGER,
+  tenant_id TEXT DEFAULT 'ALFIN',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================================
+-- Novas Tabelas Módulos 5-9
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.lojistas_vendedores (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  lojista_id UUID REFERENCES public.lojistas(id) ON DELETE CASCADE,
+  nome TEXT NOT NULL,
+  cpf TEXT UNIQUE,
+  telefone TEXT,
+  ativo BOOLEAN DEFAULT true,
+  tenant_id TEXT DEFAULT 'ALFIN',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.visitas_comerciais (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  lojista_id UUID REFERENCES public.lojistas(id) ON DELETE CASCADE,
+  consultor_nome TEXT NOT NULL,
+  data_visita DATE NOT NULL,
+  observacoes TEXT,
+  brindes_entregues TEXT,
+  tenant_id TEXT DEFAULT 'ALFIN',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.logs_sessao (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  usuario TEXT NOT NULL,
+  login_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  logout_at TIMESTAMP WITH TIME ZONE,
+  tenant_id TEXT DEFAULT 'ALFIN'
+);
+
+CREATE TABLE IF NOT EXISTS public.lembretes_cobranca (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  contrato_id UUID REFERENCES public.contratos(id) ON DELETE CASCADE,
+  data_agendada TIMESTAMP WITH TIME ZONE NOT NULL,
+  descricao TEXT NOT NULL,
+  concluido BOOLEAN DEFAULT false,
+  tenant_id TEXT DEFAULT 'ALFIN',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.audit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tabela TEXT NOT NULL,
+  registro_id UUID NOT NULL,
+  acao TEXT NOT NULL,
+  usuario_id TEXT,
+  dados_anteriores JSONB,
+  dados_novos JSONB,
+  tenant_id TEXT DEFAULT 'ALFIN',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -98,13 +167,24 @@ ALTER TABLE public.contratos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.parcelas_fpd ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.documentos ENABLE ROW LEVEL SECURITY;
 
+ALTER TABLE public.lojistas_vendedores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.visitas_comerciais ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.logs_sessao ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lembretes_cobranca ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+
 -- Acesso total para usuários autenticados (Intranet B2B2C)
-CREATE POLICY "auth_full_lojistas" ON public.lojistas FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "auth_full_clientes" ON public.clientes FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "auth_full_veiculos" ON public.veiculos FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "auth_full_contratos" ON public.contratos FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "auth_full_parcelas" ON public.parcelas_fpd FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "auth_full_documentos" ON public.documentos FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_full_lojistas" ON public.lojistas FOR ALL TO authenticated USING (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN') WITH CHECK (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN');
+CREATE POLICY "auth_full_clientes" ON public.clientes FOR ALL TO authenticated USING (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN') WITH CHECK (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN');
+CREATE POLICY "auth_full_veiculos" ON public.veiculos FOR ALL TO authenticated USING (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN') WITH CHECK (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN');
+CREATE POLICY "auth_full_contratos" ON public.contratos FOR ALL TO authenticated USING (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN') WITH CHECK (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN');
+CREATE POLICY "auth_full_parcelas" ON public.parcelas_fpd FOR ALL TO authenticated USING (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN') WITH CHECK (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN');
+CREATE POLICY "auth_full_documentos" ON public.documentos FOR ALL TO authenticated USING (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN') WITH CHECK (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN');
+CREATE POLICY "auth_full_lojistas_vendedores" ON public.lojistas_vendedores FOR ALL TO authenticated USING (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN') WITH CHECK (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN');
+CREATE POLICY "auth_full_visitas_comerciais" ON public.visitas_comerciais FOR ALL TO authenticated USING (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN') WITH CHECK (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN');
+CREATE POLICY "auth_full_logs_sessao" ON public.logs_sessao FOR ALL TO authenticated USING (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN') WITH CHECK (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN');
+CREATE POLICY "auth_full_lembretes_cobranca" ON public.lembretes_cobranca FOR ALL TO authenticated USING (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN') WITH CHECK (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN');
+CREATE POLICY "auth_full_audit_logs" ON public.audit_logs FOR ALL TO authenticated USING (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN') WITH CHECK (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN');
 
 -- ============================================================
 -- Performance Indexes
