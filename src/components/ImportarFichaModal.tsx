@@ -14,7 +14,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 ).toString();
 
 export function ImportarFichaModal({ open, onOpenChange, onFichaLida }: { open: boolean, onOpenChange: (open: boolean) => void, onFichaLida: () => void }) {
-  const { setOcrData } = useStore();
+  const { setOcrData, lojistas } = useStore();
   const [loading, setLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [lojistaId, setLojistaId] = useState("");
