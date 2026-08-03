@@ -31,16 +31,48 @@ const colunas = [
 ] as const;
 
 function FabricaPage() {
-  const { contratos, clientes, lojistas, loading } = useStore();
+  const { contratos, clientes, lojistas, loading, editContrato } = useStore();
   const [openOcr, setOpenOcr] = useState(false);
   const [openContrato, setOpenContrato] = useState(false);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
 
   const getStatus = (c: any) => {
-    // Simulação do Status Baseado em Campos
+    if (c.status_comissao === 'Recebida') return 'Paga';
     if (c.status_formalizacao === 'Formalizado') return 'Formalizando';
     if (c.status_formalizacao === 'Devolvido') return 'Pendência';
-    if (c.status_comissao === 'Recebida') return 'Paga';
+    if (c.status_formalizacao === 'Análise Banco') return 'Análise Banco';
+    if (c.status_formalizacao === 'Aprovado') return 'Aprovada';
     return 'Digitada';
+  };
+
+  const handleDrop = async (colId: string) => {
+    if (!draggedId) return;
+    const c = contratos.find(x => x.id === draggedId);
+    if (!c) return;
+    
+    let updates = { status_formalizacao: c.status_formalizacao, status_comissao: c.status_comissao };
+    if (colId === 'Paga') {
+      updates.status_comissao = 'Recebida';
+      updates.status_formalizacao = 'Formalizado';
+    } else if (colId === 'Formalizando') {
+      updates.status_formalizacao = 'Formalizado';
+      updates.status_comissao = 'Pendente';
+    } else if (colId === 'Aprovada') {
+      updates.status_formalizacao = 'Aprovado';
+      updates.status_comissao = 'Pendente';
+    } else if (colId === 'Pendência') {
+      updates.status_formalizacao = 'Devolvido';
+      updates.status_comissao = 'Pendente';
+    } else if (colId === 'Análise Banco') {
+      updates.status_formalizacao = 'Análise Banco';
+      updates.status_comissao = 'Pendente';
+    } else if (colId === 'Digitada') {
+      updates.status_formalizacao = 'Pendente';
+      updates.status_comissao = 'Pendente';
+    }
+    
+    await editContrato(draggedId, updates);
+    setDraggedId(null);
   };
 
   const getTempo = (c: any) => {
@@ -92,7 +124,13 @@ function FabricaPage() {
         ) : (
           <div className="flex h-[calc(100vh-200px)] gap-6 overflow-x-auto pb-4">
             {colunas.map((col) => (
-              <div key={col.id} className="flex h-full w-80 shrink-0 flex-col rounded-2xl bg-black/40 border border-white/5 p-4">
+              <div 
+                key={col.id} 
+                className="flex h-full w-80 shrink-0 flex-col rounded-2xl bg-black/40 border border-white/5 p-4 transition-colors"
+                onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("bg-white/5"); }}
+                onDragLeave={(e) => { e.currentTarget.classList.remove("bg-white/5"); }}
+                onDrop={(e) => { e.currentTarget.classList.remove("bg-white/5"); handleDrop(col.id); }}
+              >
                 <div className="mb-4 flex items-center justify-between px-2">
                   <h3 className="font-semibold text-white/90">{col.titulo}</h3>
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-white/70">
@@ -108,7 +146,12 @@ function FabricaPage() {
                     const tempoColor = horas > 48 ? "text-destructive bg-destructive/10 border-destructive/20" : horas > 24 ? "text-amber-500 bg-amber-500/10 border-amber-500/20" : "text-emerald-500 bg-emerald-500/10 border-emerald-500/20";
                     
                     return (
-                      <div key={c.id} className="w-full rounded-xl border border-white/10 bg-[#1A1C23] p-3 text-left shadow-lg cursor-pointer hover:-translate-y-0.5 transition-transform">
+                      <div 
+                        key={c.id} 
+                        draggable
+                        onDragStart={() => setDraggedId(c.id)}
+                        className="w-full rounded-xl border border-white/10 bg-[#1A1C23] p-3 text-left shadow-lg cursor-grab active:cursor-grabbing hover:-translate-y-0.5 transition-transform opacity-100"
+                      >
                         <div className="flex items-start justify-between">
                           <p className="truncate text-sm font-semibold">{cli?.nome || "Desconhecido"}</p>
                           <button 
@@ -142,7 +185,7 @@ function FabricaPage() {
       <ImportarFichaModal 
         open={openOcr} 
         onOpenChange={setOpenOcr} 
-        onFichaLida={() => toast.success("Esteira Atualizada!")} 
+        onFichaLida={() => setOpenContrato(true)} 
       />
       <NovoContratoModal 
         open={openContrato} 
