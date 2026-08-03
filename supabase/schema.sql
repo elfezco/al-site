@@ -158,8 +158,40 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
 );
 
 -- ============================================================
--- Row Level Security
+-- Row Level Security & Alterações (Migrações)
 -- ============================================================
+-- Ensure new columns exist on all tables (if they were created previously)
+ALTER TABLE public.lojistas ADD COLUMN IF NOT EXISTS tenant_id TEXT DEFAULT 'ALFIN';
+ALTER TABLE public.lojistas ADD COLUMN IF NOT EXISTS socio_nome TEXT;
+ALTER TABLE public.lojistas ADD COLUMN IF NOT EXISTS socio_telefone TEXT;
+ALTER TABLE public.lojistas ADD COLUMN IF NOT EXISTS fichas_enviadas INTEGER DEFAULT 0;
+
+ALTER TABLE public.clientes ADD COLUMN IF NOT EXISTS tenant_id TEXT DEFAULT 'ALFIN';
+ALTER TABLE public.clientes ADD COLUMN IF NOT EXISTS rg TEXT;
+ALTER TABLE public.clientes ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE public.clientes ADD COLUMN IF NOT EXISTS data_nascimento DATE;
+ALTER TABLE public.clientes ADD COLUMN IF NOT EXISTS endereco TEXT;
+
+ALTER TABLE public.veiculos ADD COLUMN IF NOT EXISTS tenant_id TEXT DEFAULT 'ALFIN';
+
+ALTER TABLE public.contratos ADD COLUMN IF NOT EXISTS tenant_id TEXT DEFAULT 'ALFIN';
+ALTER TABLE public.contratos ADD COLUMN IF NOT EXISTS comissao_promotora NUMERIC;
+ALTER TABLE public.contratos ADD COLUMN IF NOT EXISTS checklist_dut BOOLEAN DEFAULT false;
+ALTER TABLE public.contratos ADD COLUMN IF NOT EXISTS checklist_contrato BOOLEAN DEFAULT false;
+ALTER TABLE public.contratos ADD COLUMN IF NOT EXISTS checklist_biometria BOOLEAN DEFAULT false;
+ALTER TABLE public.contratos ADD COLUMN IF NOT EXISTS valor_troco_na_troca NUMERIC;
+ALTER TABLE public.contratos ADD COLUMN IF NOT EXISTS status_formalizacao TEXT DEFAULT 'Pendente';
+ALTER TABLE public.contratos ADD COLUMN IF NOT EXISTS link_segunda_via TEXT;
+ALTER TABLE public.contratos ADD COLUMN IF NOT EXISTS status_comissao TEXT DEFAULT 'Estimada';
+
+ALTER TABLE public.parcelas_fpd ADD COLUMN IF NOT EXISTS tenant_id TEXT DEFAULT 'ALFIN';
+ALTER TABLE public.documentos ADD COLUMN IF NOT EXISTS tenant_id TEXT DEFAULT 'ALFIN';
+ALTER TABLE public.lojistas_vendedores ADD COLUMN IF NOT EXISTS tenant_id TEXT DEFAULT 'ALFIN';
+ALTER TABLE public.visitas_comerciais ADD COLUMN IF NOT EXISTS tenant_id TEXT DEFAULT 'ALFIN';
+ALTER TABLE public.logs_sessao ADD COLUMN IF NOT EXISTS tenant_id TEXT DEFAULT 'ALFIN';
+ALTER TABLE public.lembretes_cobranca ADD COLUMN IF NOT EXISTS tenant_id TEXT DEFAULT 'ALFIN';
+ALTER TABLE public.audit_logs ADD COLUMN IF NOT EXISTS tenant_id TEXT DEFAULT 'ALFIN';
+
 ALTER TABLE public.lojistas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.clientes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.veiculos ENABLE ROW LEVEL SECURITY;
