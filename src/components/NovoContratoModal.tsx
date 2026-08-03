@@ -258,24 +258,52 @@ export function NovoContratoModal({ open, onOpenChange }: { open: boolean, onOpe
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="ABC-1234 ou ABC1D23"
+                  placeholder="Placa: ABC-1234"
                   value={placaInput}
                   onChange={(e) => setPlacaInput(e.target.value.toUpperCase())}
                   maxLength={8}
                   className="w-full rounded-lg border border-white/12 bg-black/30 px-3 py-2 text-sm outline-none transition-colors focus:border-gold/60 font-mono text-lg tracking-widest text-center"
                 />
-                <button
-                  onClick={handleBuscarPlaca}
-                  disabled={loadingSearch}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#FADB5F,#B8860B)] px-4 py-2.5 text-sm font-semibold text-[#0B0C10] transition-opacity hover:opacity-90 disabled:opacity-50"
-                >
-                  {loadingSearch ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                  Buscar Dados
-                </button>
               </div>
             </label>
-            <div className="mt-4 text-xs text-muted-foreground text-center">
-              A busca preencherá automaticamente os dados do veículo e a Tabela FIPE atualizada.
+            
+            <div className="pt-2">
+              <span className="text-xs text-muted-foreground uppercase tracking-wider block mb-2">Seleção na Tabela FIPE</span>
+              <select 
+                className="w-full rounded-lg border border-white/12 bg-black/30 px-3 py-2 text-sm outline-none transition-colors focus:border-gold/60 mb-2"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val) return;
+                  setVeiculoFipe({
+                    placa: placaInput.replace(/[^A-Z0-9]/g, "") || "ABC0000",
+                    marca: val.split("|")[0],
+                    modelo: val.split("|")[1],
+                    anoModelo: parseInt(val.split("|")[2]),
+                    anoFabricacao: parseInt(val.split("|")[2]) - 1,
+                    chassi: "9BW" + Math.floor(Math.random() * 1000000),
+                    renavam: "0123" + Math.floor(Math.random() * 100000),
+                    valorFipe: parseFloat(val.split("|")[3])
+                  });
+                  setStep(2);
+                  if (!valorFinanciado) setValorFinanciado(val.split("|")[3]);
+                  toast.success("Veículo FIPE selecionado!");
+                }}
+              >
+                <option value="">Selecione o Veículo FIPE...</option>
+                <option value="VOLKSWAGEN|GOL TRENDLINE 1.0 T.FLEX 12V 5P|2018|38500">VW Gol Trendline 1.0 2018 (R$ 38.500)</option>
+                <option value="VOLKSWAGEN|SAVEIRO CROSS 1.6 T.FLEX 16V CE|2021|78500">VW Saveiro Cross 1.6 2021 (R$ 78.500)</option>
+                <option value="CHEVROLET|ONIX HATCH LT 1.0 8V FLEX 5P|2020|55000">GM Onix Hatch LT 1.0 2020 (R$ 55.000)</option>
+                <option value="FIAT|ARGO DRIVE 1.0 6V FLEX 5P|2022|62000">Fiat Argo Drive 1.0 2022 (R$ 62.000)</option>
+                <option value="HONDA|CIVIC SEDAN EXL 2.0 FLEX 16V AUT|2019|95000">Honda Civic EXL 2.0 2019 (R$ 95.000)</option>
+                <option value="TOYOTA|COROLLA XEI 2.0 FLEX 16V AUT|2021|120000">Toyota Corolla XEI 2.0 2021 (R$ 120.000)</option>
+                <option value="HYUNDAI|HB20 COMFORT 1.0 FLEX 12V 5P|2023|75000">Hyundai HB20 Comfort 1.0 2023 (R$ 75.000)</option>
+                <option value="RENAULT|KWID ZEN 1.0 FLEX 12V 5P|2022|48000">Renault Kwid Zen 1.0 2022 (R$ 48.000)</option>
+                <option value="FORD|KA SEDAN SE 1.5 FLEX 16V 4P|2018|45000">Ford Ka Sedan SE 1.5 2018 (R$ 45.000)</option>
+                <option value="NISSAN|KICKS SL 1.6 FLEX 16V AUT|2020|88000">Nissan Kicks SL 1.6 2020 (R$ 88.000)</option>
+              </select>
+            </div>
+            <div className="mt-2 text-xs text-muted-foreground text-center">
+              A seleção preencherá os dados do veículo e a Tabela FIPE atualizada. Placa-FIPE integrações exigem plano Sinesp/ApiBrasil.
             </div>
           </div>
         )}
