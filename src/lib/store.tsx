@@ -110,6 +110,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         supabase.from("documentos").select("*"),
       ]);
 
+      const getMocks = (key: string) => {
+        try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch(e) { return []; }
+      };
+
+      const mockLojistas = getMocks("mock_lojistas");
+      const mockClientes = getMocks("mock_clientes");
+      const mockContratos = getMocks("mock_contratos");
+      const mockParcelas = getMocks("mock_parcelas");
+      const mockVeiculos = getMocks("mock_veiculos");
+      const mockDocumentos = getMocks("mock_documentos");
+
       if (lojRes.error) throw lojRes.error;
       if (cliRes.error) throw cliRes.error;
       if (conRes.error) throw conRes.error;
@@ -117,12 +128,30 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (veiRes.error) throw veiRes.error;
       if (docRes.error) throw docRes.error;
 
-      setLojistas(lojRes.data || []);
-      setClientes(cliRes.data || []);
-      setContratos(conRes.data || []);
-      setParcelas(parRes.data || []);
-      setVeiculos(veiRes.data || []);
-      setDocumentos(docRes.data || []);
+      setLojistas(prev => {
+        const local = prev.filter(x => x.id.includes("MOCK"));
+        return [...(lojRes.data || []), ...mockLojistas, ...local];
+      });
+      setClientes(prev => {
+        const local = prev.filter(x => x.id.includes("MOCK"));
+        return [...(cliRes.data || []), ...mockClientes, ...local];
+      });
+      setContratos(prev => {
+        const local = prev.filter(x => x.id.includes("MOCK"));
+        return [...(conRes.data || []), ...mockContratos, ...local];
+      });
+      setParcelas(prev => {
+        const local = prev.filter(x => x.id.includes("MOCK"));
+        return [...(parRes.data || []), ...mockParcelas, ...local];
+      });
+      setVeiculos(prev => {
+        const local = prev.filter(x => x.id.includes("MOCK"));
+        return [...(veiRes.data || []), ...mockVeiculos, ...local];
+      });
+      setDocumentos(prev => {
+        const local = prev.filter(x => x.id.includes("MOCK"));
+        return [...(docRes.data || []), ...mockDocumentos, ...local];
+      });
     } catch (error: any) {
       console.error(error);
       toast.error("Erro ao carregar os dados do servidor.");
@@ -132,8 +161,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    carregarDados();
-  }, [user]);
+    if (user?.id) {
+      carregarDados();
+    }
+  }, [user?.id]);
 
   const value = useMemo<StoreValue>(() => {
     const views = contratos
@@ -177,7 +208,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         } catch (error: any) {
           console.error("Erro Supabase (Lojista):", error);
           toast.success("Lojista salvo localmente (Modo Offline/Simulação)");
-          setLojistas(prev => [...prev, { id: "L-MOCK-" + Date.now(), ...data } as any]);
+          const newMock = { id: "L-MOCK-" + Date.now(), ...data };
+          const existingMocks = JSON.parse(localStorage.getItem("mock_lojistas") || "[]");
+          localStorage.setItem("mock_lojistas", JSON.stringify([...existingMocks, newMock]));
+          setLojistas(prev => [...prev, newMock as any]);
         }
       },
       editLojista: async (id, data) => {
@@ -212,7 +246,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           await carregarDados();
         } catch (error: any) {
           console.error("Erro Supabase (Cliente):", error);
-          setClientes(prev => [...prev, { id: "C-MOCK-" + Date.now(), ...data } as any]);
+          toast.success("Cliente salvo localmente (Modo Offline/Simulação)");
+          const newMock = { id: "C-MOCK-" + Date.now(), ...data };
+          const existingMocks = JSON.parse(localStorage.getItem("mock_clientes") || "[]");
+          localStorage.setItem("mock_clientes", JSON.stringify([...existingMocks, newMock]));
+          setClientes(prev => [...prev, newMock as any]);
         }
       },
       editCliente: async (id, data) => {
@@ -247,9 +285,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           return resData.id;
         } catch (error: any) {
           console.error("Erro Supabase (Veículo):", error);
-          const idMock = "V-MOCK-" + Date.now();
-          setVeiculos(prev => [...prev, { id: idMock, ...data } as any]);
-          return idMock;
+          toast.success("Veículo salvo localmente (Modo Offline/Simulação)");
+          const newMock = { id: "V-MOCK-" + Date.now(), ...data };
+          const existingMocks = JSON.parse(localStorage.getItem("mock_veiculos") || "[]");
+          localStorage.setItem("mock_veiculos", JSON.stringify([...existingMocks, newMock]));
+          setVeiculos(prev => [...prev, newMock as any]);
+          return newMock.id;
         }
       },
       editVeiculo: async (id, data) => {
@@ -308,32 +349,35 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           toast.success("Contrato e parcelas FPD criados!");
           await carregarDados();
         } catch (error: any) {
-          console.error("Erro Supabase (Contrato):", error);
-          toast.success("Contrato salvo localmente (Modo Offline)!");
-          const idContrato = "CT-MOCK-" + Date.now();
-          const hoje = new Date();
-          const novoContrato = {
-            id: idContrato,
+          console.error("Erro Supabase (Contrato/Parcelas):", error);
+          toast.success("Contrato salvo localmente (Modo Offline/Simulação)");
+          
+          const cid = "CT-MOCK-" + Date.now();
+          const mockContrato = {
+            id: cid,
             ...dados,
-            data_contrato: hoje.toISOString().split("T")[0],
+            data_contrato: new Date().toISOString().split("T")[0]
           };
           
-          const vencimentos = [30, 60, 90].map((dias) => {
-            const data = new Date(hoje);
-            data.setDate(data.getDate() + dias);
-            return data.toISOString().split("T")[0];
+          const existingContratos = JSON.parse(localStorage.getItem("mock_contratos") || "[]");
+          localStorage.setItem("mock_contratos", JSON.stringify([...existingContratos, mockContrato]));
+          setContratos(prev => [...prev, mockContrato as any]);
+
+          const mocksP = [30, 60, 90].map((dias, i) => {
+            const date = new Date();
+            date.setDate(date.getDate() + dias);
+            return {
+              id: "P-MOCK-" + Date.now() + "-" + i,
+              contrato_id: cid,
+              numero_parcela: i + 1,
+              data_vencimento: date.toISOString().split("T")[0],
+              status: "Pendente"
+            };
           });
-
-          const parcelasFPD = vencimentos.map((vencimento, idx) => ({
-            id: `P-MOCK-${idContrato}-${idx}`,
-            contrato_id: idContrato,
-            numero_parcela: idx + 1,
-            data_vencimento: vencimento,
-            status: "Pendente" as const,
-          }));
-
-          setContratos(prev => [...prev, novoContrato as any]);
-          setParcelas(prev => [...prev, ...parcelasFPD]);
+          
+          const existingParcelas = JSON.parse(localStorage.getItem("mock_parcelas") || "[]");
+          localStorage.setItem("mock_parcelas", JSON.stringify([...existingParcelas, ...mocksP]));
+          setParcelas(prev => [...prev, ...mocksP as any]);
         }
       },
 
