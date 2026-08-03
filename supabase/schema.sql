@@ -206,16 +206,37 @@ ALTER TABLE public.lembretes_cobranca ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- Acesso total para usuários autenticados (Intranet B2B2C)
+DROP POLICY IF EXISTS "auth_full_lojistas" ON public.lojistas;
 CREATE POLICY "auth_full_lojistas" ON public.lojistas FOR ALL TO authenticated USING (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN') WITH CHECK (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN');
+
+DROP POLICY IF EXISTS "auth_full_clientes" ON public.clientes;
 CREATE POLICY "auth_full_clientes" ON public.clientes FOR ALL TO authenticated USING (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN') WITH CHECK (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN');
+
+DROP POLICY IF EXISTS "auth_full_veiculos" ON public.veiculos;
 CREATE POLICY "auth_full_veiculos" ON public.veiculos FOR ALL TO authenticated USING (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN') WITH CHECK (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN');
+
+DROP POLICY IF EXISTS "auth_full_contratos" ON public.contratos;
 CREATE POLICY "auth_full_contratos" ON public.contratos FOR ALL TO authenticated USING (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN') WITH CHECK (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN');
+
+DROP POLICY IF EXISTS "auth_full_parcelas" ON public.parcelas_fpd;
 CREATE POLICY "auth_full_parcelas" ON public.parcelas_fpd FOR ALL TO authenticated USING (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN') WITH CHECK (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN');
+
+DROP POLICY IF EXISTS "auth_full_documentos" ON public.documentos;
 CREATE POLICY "auth_full_documentos" ON public.documentos FOR ALL TO authenticated USING (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN') WITH CHECK (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN');
+
+DROP POLICY IF EXISTS "auth_full_lojistas_vendedores" ON public.lojistas_vendedores;
 CREATE POLICY "auth_full_lojistas_vendedores" ON public.lojistas_vendedores FOR ALL TO authenticated USING (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN') WITH CHECK (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN');
+
+DROP POLICY IF EXISTS "auth_full_visitas_comerciais" ON public.visitas_comerciais;
 CREATE POLICY "auth_full_visitas_comerciais" ON public.visitas_comerciais FOR ALL TO authenticated USING (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN') WITH CHECK (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN');
+
+DROP POLICY IF EXISTS "auth_full_logs_sessao" ON public.logs_sessao;
 CREATE POLICY "auth_full_logs_sessao" ON public.logs_sessao FOR ALL TO authenticated USING (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN') WITH CHECK (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN');
+
+DROP POLICY IF EXISTS "auth_full_lembretes_cobranca" ON public.lembretes_cobranca;
 CREATE POLICY "auth_full_lembretes_cobranca" ON public.lembretes_cobranca FOR ALL TO authenticated USING (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN') WITH CHECK (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN');
+
+DROP POLICY IF EXISTS "auth_full_audit_logs" ON public.audit_logs;
 CREATE POLICY "auth_full_audit_logs" ON public.audit_logs FOR ALL TO authenticated USING (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN') WITH CHECK (tenant_id = current_setting('app.tenant_id', true) OR tenant_id = 'ALFIN');
 
 -- ============================================================
